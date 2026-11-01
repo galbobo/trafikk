@@ -59,12 +59,7 @@ body { background:#090D16; color:#F8FAFC; font-family:system-ui,-apple-system,'S
         <button onclick="zoomToRegion('sirdal')" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-sky-500/20 border border-slate-700 text-left">❄️ Sirdal / Hunnedalen</button>
       </div>
       <input type="text" id="searchInput" oninput="applyFilters()" placeholder="Søk vei (E39, E134) eller sted..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
-      <div class="flex flex-wrap gap-1.5 text-xs" id="catButtons">
-        <button data-cat="ALL" onclick="setCategory('ALL')">Alle</button>
-        <button data-cat="HOVEDVEI" onclick="setCategory('HOVEDVEI')">🛣️ Hovedvei</button>
-        <button data-cat="FJELL" onclick="setCategory('FJELL')">❄️ Fjell</button>
-        <button data-cat="ANDRE" onclick="setCategory('ANDRE')">⚓ Havn & By</button>
-      </div>
+      <div class="flex flex-wrap gap-1.5 text-xs" id="catButtons"></div>
       <div class="pt-3 border-t border-ops-border text-right text-xs">
         <button onclick="refreshCameras()" class="text-sky-400 hover:text-sky-300 font-semibold">🔄 Last strømmer på nytt</button>
       </div>
@@ -82,7 +77,14 @@ body { background:#090D16; color:#F8FAFC; font-family:system-ui,-apple-system,'S
 
 <script>
 // ---------- KONFIG ----------
-const IMAGE_REFRESH_SECONDS = 30; // hvor ofte stillbilder lastes på nytt
+const IMAGE_REFRESH_SECONDS = 30; // standard intervall for stillbilder (kan settes per kamera med "interval")
+// Kameralisten hentes fra første kilde som svarer. Hvis ingen svarer, brukes listen under.
+// Godtar enten en liste [...] eller {"state":{"cameras":[...]}}.
+const CAMERA_SOURCES = [
+  'https://solaweb.no/trafikksentralen/api/public-state.php',
+  'cameras.json' // lokal reserve (se cameras.example.json)
+];
+const RELOAD_MINUTES = 5;
 
 // C(id, navn, vei, kommune, lat, lng, kategori, streamUrl, imageUrl)
 // Video:      legg inn .m3u8-adressen som 8. verdi.
@@ -92,7 +94,7 @@ const IMAGE_REFRESH_SECONDS = 30; // hvor ofte stillbilder lastes på nytt
 const C = (id, name, road, municipality, lat, lng, category, streamUrl = '', imageUrl = '') =>
   ({ id, name, road, municipality, lat, lng, category, streamUrl, imageUrl });
 
-const CAMERAS = [
+let CAMERAS = [
   C('v1',  'Vegvesen kamera 1129024_2', 'Vegvesen', 'Posisjon ikke satt', null, null, 'HOVEDVEI',
     'https://kamera.vegvesen.no/public/1129024_2/hls_1_stream_1_orig.m3u8'),
   C('c1',  'E39 Lura / Forus',                'E39',   'Sandnes',            58.8861, 5.7330, 'HOVEDVEI'),
@@ -205,7 +207,7 @@ function mountImage(cam, mount) {
     next.src = cam.imageUrl + (cam.imageUrl.includes('?') ? '&' : '?') + '_=' + Date.now();
   };
   load();
-  timers.add(setInterval(load, IMAGE_REFRESH_SECONDS * 1000));
+  timers.add(setInterval(load, (cam.interval || IMAGE_REFRESH_SECONDS) * 1000));
 }
 
 function mountPlayer(cam) {
@@ -235,6 +237,7 @@ function mountPlayer(cam) {
   const play = () => { video.play().catch(() => {}); setStatus(cam.id, 'live'); };
   const fail = () => {
     setStatus(cam.id, 'error');
+    setTimeout(() => mount.isConnected && mountPlayer(cam), 30000); // prøv igjen etter 30 s
     mount.innerHTML = `<div class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center p-3">
       <p class="text-xs text-slate-300">Strømmen kunne ikke lastes (nettverk eller CORS-blokkering).</p>
       <a href="${esc(detailUrl(cam))}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-sky-500 text-slate-950 font-semibold text-xs">Åpne kamera ↗</a></div>`;
@@ -323,7 +326,61 @@ function applyFilters() {
   });
 }
 
-function refreshCameras() { lastKey = null; applyFilters(); }
+let sig = '';
+const CAT_LABELS = { HOVEDVEI: '🛣️ Hovedvei', FJELL: '❄️ Fjell', ANDRE: '⚓ Havn & By' };
+
+function buildCatButtons() {
+  const cats = ['ALL', ...new Set(CAMERAS.map(c => c.category))];
+  if (!cats.includes(selectedCategory)) selectedCategory = 'ALL';
+  document.getElementById('catButtons').replaceChildren(...cats.map(cat => {
+    const b = document.createElement('button');
+    b.dataset.cat = cat;
+    b.textContent = cat === 'ALL' ? 'Alle' : (CAT_LABELS[cat] || cat);
+    b.className = cat === selectedCategory ? ON : OFF;
+    b.onclick = () => setCategory(cat);
+    return b;
+  }));
+}
+
+// Tilpasser et element fra kamera-JSON (type 'hls' | 'image', url, wall, provider, address …) til sidens format
+function normalize(c, i) {
+  const hls = c.streamUrl || (c.type === 'hls' ? c.url : '');
+  const img = c.imageUrl || (c.type !== 'hls' ? c.url : '');
+  return {
+    id: String(c.id || 'x' + i).replace(/\W/g, '_'),
+    name: c.name || 'Kamera',
+    road: c.road || c.provider || '',
+    municipality: c.municipality || c.address || '',
+    lat: c.lat ?? null, lng: c.lng ?? c.lon ?? null,
+    category: c.category || c.wall || 'ANDRE',
+    streamUrl: hls || '', imageUrl: hls ? '' : (img || ''), interval: c.interval
+  };
+}
+
+async function fetchList(url) {
+  const r = await fetch(url, { cache: 'no-store' });
+  if (!r.ok) throw new Error(r.status);
+  const j = await r.json();
+  const raw = Array.isArray(j) ? j : (j.state && j.state.cameras) || j.cameras || [];
+  return raw.filter(c => c.url || c.streamUrl || c.imageUrl).map(normalize);
+}
+
+async function loadCameras(force) {
+  for (const url of CAMERA_SOURCES) {
+    try {
+      const list = await fetchList(url);
+      if (!list.length) continue;
+      const s = JSON.stringify(list);
+      if (s !== sig || force) { sig = s; CAMERAS = list; buildCatButtons(); }
+      break;
+    } catch (e) {
+      console.warn('Kunne ikke hente ' + url + ' (CORS, nettverk eller feil format?)', e);
+    }
+  }
+  if (force || sig) { lastKey = null; applyFilters(); }
+}
+
+function refreshCameras() { loadCameras(true); }
 
 setInterval(() => {
   document.getElementById('liveClock').textContent = new Date().toLocaleTimeString('no-NO', { hour12: false });
@@ -331,8 +388,11 @@ setInterval(() => {
 
 window.addEventListener('DOMContentLoaded', () => {
   initMap();
-  setCategory('ALL');
   setMapLayer('streets');
+  buildCatButtons();
+  setCategory('ALL');
+  loadCameras();
+  setInterval(loadCameras, RELOAD_MINUTES * 60000);
 });
 </script>
 </body>

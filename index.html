@@ -1,134 +1,356 @@
-<!doctype html>
-<html lang="no">
+<!DOCTYPE html>
+<html lang="no" class="dark">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Trafikkamera</title>
-<meta name="description" content="Live trafikkameraer fra Stavanger, Sandnes, Sola og Haugesund.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sør-Vest Trafikk & Kameraovervåking</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js"></script>
+<script>
+tailwind.config = { darkMode: 'class', theme: { extend: { colors: { ops: { bg:'#090D16', panel:'#111827', card:'#161F33', border:'#1E293B' } } } } }
+</script>
 <style>
-/* Control-room camera wall: one dark surface, groups stacked, tiles in a fluid 16:9 grid */
-:root {
-  --bg: #0d1013;
-  --panel: #151a1f;
-  --line: #262e36;
-  --fg: #e6ebef;
-  --muted: #8794a0;
-  --amber: #f2b632;      /* road-sign yellow: the one accent */
-  --live: #e5484d;
-  --ok: #46a758;
-  --display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
-  --body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
-  color-scheme: dark;
-}
-* { box-sizing: border-box; }
-html, body { margin: 0; }
-body {
-  background: var(--bg); color: var(--fg); font: 15px/1.5 var(--body);
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 0 48px;
-}
-header {
-  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px;
-  padding-block: 28px 20px; border-bottom: 1px solid var(--line); margin-bottom: 8px;
-}
-h1 {
-  font: 700 clamp(28px, 5vw, 40px)/1 var(--display); letter-spacing: .02em; text-transform: uppercase; margin: 0;
-  display: flex; align-items: center; gap: 12px;
-}
-h1 .sign { width: .9em; height: .9em; border: 3px solid var(--amber); border-radius: 4px; display: grid; place-items: center; }
-h1 .sign::after { content: ""; width: 40%; height: 40%; background: var(--amber); border-radius: 50%; }
-.meta { font: 500 13px/1.4 var(--mono); color: var(--muted); display: flex; gap: 16px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
-.meta b { color: var(--fg); font-weight: 500; }
-nav { display: flex; gap: 8px; flex-wrap: wrap; padding-block: 12px; }
-nav button {
-  font: 600 14px/1 var(--display); letter-spacing: .06em; text-transform: uppercase;
-  background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; cursor: pointer;
-}
-nav button[aria-pressed="true"] { color: var(--bg); background: var(--amber); border-color: var(--amber); }
-nav button:focus-visible, .tile:focus-visible, .x:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
-section { margin-top: 24px; }
-h2 {
-  font: 600 15px/1 var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--amber);
-  margin: 0 0 12px; display: flex; align-items: center; gap: 10px;
-}
-h2 small { font: 400 12px var(--mono); letter-spacing: 0; color: var(--muted); text-transform: none; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 12px; }
-.tile {
-  background: var(--panel); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; cursor: zoom-in;
-  display: flex; flex-direction: column; min-width: 0; text-align: left; color: inherit; padding: 0; font: inherit;
-}
-.screen { position: relative; aspect-ratio: 16 / 9; max-width: 100%; background: #000; }
-.screen video, .screen img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
-.badge {
-  position: absolute; bottom: 8px; left: 8px; font: 600 12px/1 var(--display); letter-spacing: .1em; text-transform: uppercase;
-  background: rgba(0,0,0,.6); padding: 5px 8px; border-radius: 3px; display: flex; align-items: center; gap: 6px;
-}
-.badge i { width: 7px; height: 7px; border-radius: 50%; background: var(--live); }
-.badge.still i { background: var(--muted); }
-.badge.live i { animation: pulse 1.6s ease-in-out infinite; }
-@keyframes pulse { 50% { opacity: .3; } }
-.age { position: absolute; bottom: 8px; right: 8px; font: 500 11px/1 var(--mono); background: rgba(0,0,0,.6); padding: 4px 6px; border-radius: 3px; font-variant-numeric: tabular-nums; }
-.msg { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 16px; color: var(--muted); font: 500 13px var(--mono); }
-.cap { padding: 10px 12px 12px; display: grid; gap: 2px; min-width: 0; }
-.cap strong { font: 600 18px/1.15 var(--display); letter-spacing: .02em; overflow-wrap: anywhere; }
-.cap span { font-size: 13px; color: var(--muted); }
-.big {
-  position: fixed; inset: 0; z-index: 2000; background: var(--bg); display: flex; flex-direction: column; gap: 12px;
-  padding: calc(16px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
-}
-.big .bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.big .bar strong { font: 700 24px/1.1 var(--display); text-transform: uppercase; letter-spacing: .02em; }
-.big .bar a { color: var(--muted); font-size: 13px; }
-.big .screen { flex: 1; aspect-ratio: auto; border-radius: 6px; overflow: hidden; }
-.big .screen video, .big .screen img { object-fit: contain; }
-.x { background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 999px; width: 40px; height: 40px; font-size: 20px; cursor: pointer; flex: none; }
-#map { position: relative; z-index: 0; isolation: isolate; height: clamp(300px, 52vh, 560px); border: 1px solid var(--line); border-radius: 6px; background: var(--panel); margin-top: 4px; }
-.leaflet-container { font: 13px var(--body); background: #1b2026; }
-/* OSM tiles turned into a night map, so the pins and the camera wall share one dark look */
-.night { filter: invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.5); }
-.leaflet-tooltip { background: var(--panel); color: var(--fg); border: 1px solid var(--line); box-shadow: none; font: 600 15px/1.2 var(--display); letter-spacing: .02em; }
-.leaflet-tooltip-top::before { border-top-color: var(--line); }
-.leaflet-control-attribution { background: rgba(13,16,19,.75) !important; color: var(--muted) !important; }
-.leaflet-control-attribution a { color: var(--muted) !important; }
-.leaflet-bar a { background: var(--panel); color: var(--fg); border-color: var(--line); }
-.pin { width: 22px; height: 22px; border-radius: 50%; border: 3px solid var(--bg); background: var(--live); box-shadow: 0 0 0 2px var(--live); display: grid; place-items: center; }
-.pin.still { background: var(--muted); box-shadow: 0 0 0 2px var(--muted); }
-.pin::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--bg); }
-.leaflet-marker-icon:hover .pin, .leaflet-marker-icon:focus .pin { background: var(--amber); box-shadow: 0 0 0 2px var(--amber); }
-.nomap { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
-footer { margin-top: 40px; color: var(--muted); font-size: 13px; }
-footer a { color: var(--muted); }
-@media (prefers-reduced-motion: reduce) { .badge.live i { animation: none; } }
+body { background:#090D16; color:#F8FAFC; font-family:system-ui,-apple-system,'Segoe UI',sans-serif; }
+.leaflet-container { background:#0B111E !important; }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background:#111827 !important; color:#F8FAFC !important; }
+.custom-marker { display:flex; align-items:center; justify-content:center; border-radius:9999px; box-shadow:0 0 12px rgba(0,0,0,.65); }
 </style>
 </head>
-<body>
-<header>
-  <h1><span class="sign" aria-hidden="true"></span>Trafikkamera</h1>
-  <div class="meta"><span id="count">Henter kameraer…</span><span>Oppdatert <b id="upd">–</b></span><span id="clock"></span></div>
+<body class="min-h-screen flex flex-col">
+
+<header class="sticky top-0 z-40 bg-ops-bg/95 backdrop-blur border-b border-ops-border px-4 lg:px-6 py-3">
+  <div class="max-w-[1920px] mx-auto flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h1 class="font-bold text-lg sm:text-xl text-white">SØR-VEST TRAFIKK & KAMERAOVERSIKT</h1>
+      <p class="text-xs text-slate-400">Direktestrømmer og kameranoder i Sør-Vest</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-3 text-xs">
+      <div class="bg-ops-panel border border-ops-border rounded-lg px-3 py-1.5">
+        <span class="text-slate-400">I kartutsnitt:</span> <b id="viewportCountBadge" class="text-white">0</b>
+      </div>
+      <button onclick="zoomToRegion('all')" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-lg">🌍 Vis hele Sør-Vest</button>
+      <span id="liveClock" class="font-mono text-sky-400">--:--:--</span>
+    </div>
+  </div>
 </header>
-<nav id="nav" aria-label="Velg vegg"></nav>
-<div id="map" role="region" aria-label="Kart over kameraene. Trykk på en nål for å se kameraet."></div>
-<p class="nomap" id="nomap" hidden></p>
-<main id="walls"></main>
-<footer>Bilder og video fra Statens vegvesen, Stavanger Aftenblad og Jatec. Kameralisten hentes fra Trafikksentralen og oppdateres hvert 5. minutt.</footer>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<main class="flex-1 max-w-[1920px] w-full mx-auto px-4 lg:px-6 py-4 space-y-6">
+  <section class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+    <div class="lg:col-span-8 bg-ops-panel border border-ops-border rounded-2xl overflow-hidden">
+      <div class="p-3 bg-slate-900/90 border-b border-ops-border flex items-center gap-2 text-xs">
+        <span class="font-semibold uppercase text-slate-400">Kartlag:</span>
+        <button onclick="setMapLayer('streets')" id="btnLayerStreets" class="px-2.5 py-1 rounded bg-sky-500 text-slate-950 font-semibold">🗺️ Veikart</button>
+        <button onclick="setMapLayer('satellite')" id="btnLayerSat" class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700">🛰️ Satellitt</button>
+      </div>
+      <div class="relative h-[380px] sm:h-[430px] w-full">
+        <div id="map" class="w-full h-full z-10"></div>
+        <div id="bboxCoordsText" class="absolute bottom-3 left-3 z-20 bg-slate-950/90 border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono text-slate-300 pointer-events-none"></div>
+      </div>
+    </div>
+
+    <div class="lg:col-span-4 bg-ops-panel border border-ops-border rounded-2xl p-4 space-y-4">
+      <h2 class="font-bold text-white border-b border-ops-border pb-3">OMRÅDER & FILTRE</h2>
+      <div class="grid grid-cols-2 gap-2 text-xs">
+        <button onclick="zoomToRegion('nordjæren')" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-sky-500/20 border border-slate-700 text-left">🏙️ Stavanger / Sandnes</button>
+        <button onclick="zoomToRegion('haugalandet')" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-sky-500/20 border border-slate-700 text-left">🌉 Haugesund / Karmøy</button>
+        <button onclick="zoomToRegion('jæren')" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-sky-500/20 border border-slate-700 text-left">🛣️ Jæren / Egersund</button>
+        <button onclick="zoomToRegion('sirdal')" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-sky-500/20 border border-slate-700 text-left">❄️ Sirdal / Hunnedalen</button>
+      </div>
+      <input type="text" id="searchInput" oninput="applyFilters()" placeholder="Søk vei (E39, E134) eller sted..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-sky-400" />
+      <div class="flex flex-wrap gap-1.5 text-xs" id="catButtons"></div>
+      <div class="pt-3 border-t border-ops-border text-right text-xs">
+        <button onclick="refreshCameras()" class="text-sky-400 hover:text-sky-300 font-semibold">🔄 Last strømmer på nytt</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="space-y-3 pb-12">
+    <div class="flex items-center justify-between border-b border-ops-border pb-2.5">
+      <h2 class="font-bold text-white">KAMERANODER I KARTUTSNITT</h2>
+      <span id="gridCountBadge" class="px-2 py-0.5 text-xs font-mono font-bold rounded bg-sky-500/20 text-sky-400">0</span>
+    </div>
+    <div id="cameraGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+  </section>
+</main>
+
 <script>
-const API = 'api/state';
-const $ = (s, el = document) => el.querySelector(s);
-const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-let cams = [], filter = 'Alle', sig = '';
-const players = new Map();   // tile element -> { stop() }
+// ---------- KONFIG ----------
+const IMAGE_REFRESH_SECONDS = 30; // standard intervall for stillbilder (kan settes per kamera med "interval")
+// Kameralisten hentes fra første kilde som svarer. Hvis ingen svarer, brukes listen under.
+// Godtar enten en liste [...] eller {"state":{"cameras":[...]}}.
+const CAMERA_SOURCES = [
+  'https://solaweb.no/trafikksentralen/api/public-state.php',
+  'cameras.json' // lokal reserve (se cameras.example.json)
+];
+const RELOAD_MINUTES = 5;
 
-// the camera list has no coordinates: Vegvesen cameras are placed by their camera id (positions from Vegvesen's
-// own weather/camera map), the others by name. A camera matching neither is listed below the map.
+// C(id, navn, vei, kommune, lat, lng, kategori, streamUrl, imageUrl)
+// Video:      legg inn .m3u8-adressen som 8. verdi.
+// Stillbilde: la 8. verdi være '' og legg inn bilde-adressen (.jpg) som 9. verdi.
+//   Eksempel: C('c1', 'E39 Lura', 'E39', 'Sandnes', 58.886, 5.733, 'HOVEDVEI', '', 'https://.../bilde.jpg')
+// lat/lng = null gir et kort som alltid vises (uavhengig av kartutsnitt).
+const C = (id, name, road, municipality, lat, lng, category, streamUrl = '', imageUrl = '') =>
+  ({ id, name, road, municipality, lat, lng, category, streamUrl, imageUrl });
+
+let CAMERAS = [
+  C('v1',  'Vegvesen kamera 1129024_2', 'Vegvesen', 'Posisjon ikke satt', null, null, 'HOVEDVEI',
+    'https://kamera.vegvesen.no/public/1129024_2/hls_1_stream_1_orig.m3u8'),
+  C('c1',  'E39 Lura / Forus',                'E39',   'Sandnes',            58.8861, 5.7330, 'HOVEDVEI'),
+  C('c2',  'E39 Ålgård / Figgjo',             'E39',   'Gjesdal',            58.7654, 5.8542, 'HOVEDVEI'),
+  C('c3',  'Fv450 Hunnedalen',                'Fv450', 'Gjesdal / Sirdal',   58.8260, 6.3950, 'FJELL'),
+  C('c4',  'E39 Mortavika Ferjekai',          'E39',   'Stavanger',          59.1422, 5.5880, 'HOVEDVEI'),
+  C('c5',  'E39 Mekjarvik / Byfjordtunnelen', 'E39',   'Randaberg',          59.0221, 5.6224, 'HOVEDVEI'),
+  C('c6',  'Rv509 Sola / Flyplassveien',      'Rv509', 'Sola',               58.8870, 5.6020, 'HOVEDVEI'),
+  C('c7',  'Rv13 Ryfast / Solbakk',           'Rv13',  'Strand',             59.0185, 5.9510, 'HOVEDVEI'),
+  C('c8',  'E39 Bue / Vikeså',                'E39',   'Bjerkreim',          58.6380, 6.0850, 'HOVEDVEI'),
+  C('c9',  'E39 Helleland',                   'E39',   'Eigersund',          58.5240, 6.2350, 'HOVEDVEI'),
+  C('c10', 'Fv44 Jærveien / Bryne',           'Fv44',  'Time',               58.7358, 5.6475, 'HOVEDVEI'),
+  C('c11', 'E39 Arsvågen Ferjekai',           'E39',   'Bokn',               59.1705, 5.4510, 'HOVEDVEI'),
+  C('c12', 'E134 Aksdal Knutepunkt',          'E134',  'Tysvær',             59.4230, 5.4620, 'HOVEDVEI'),
+  C('c13', 'Fv547 Karmsund bru',              'Fv547', 'Haugesund / Karmøy', 59.3765, 5.2950, 'HOVEDVEI'),
+  C('c14', 'Rv13 Bratlandsdalen',             'Rv13',  'Suldal',             59.6220, 6.7910, 'FJELL'),
+  C('c15', 'Fv520 Saudafjellet',              'Fv520', 'Sauda',              59.6850, 6.4820, 'FJELL'),
+  C('c16', 'E134 Langfossen / Rullestad',     'E134',  'Etne',               59.8450, 6.3380, 'FJELL'),
+  C('c17', 'Stavanger Vågen / Byfjorden',     'Bykamera', 'Stavanger',       58.9775, 5.7165, 'ANDRE'),
+  C('c18', 'Sandnes havn / Vågen',            'Bykamera', 'Sandnes',         58.8520, 5.7350, 'ANDRE')
+];
+
+// ---------- TILSTAND ----------
+let map, baseLayer, trafficLayer, markerGroup;
+let selectedCategory = 'ALL';
+let lastKey = null;
+let debounceTimer;
+
+const TILES = {
+  streets:   'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+  satellite: 'https://mt1.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}'
+};
+const ON = 'px-2.5 py-1 rounded-lg font-semibold bg-sky-500 text-slate-950';
+const OFF = 'px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700';
+
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+const detailUrl = cam => cam.lat == null ? 'https://trafikk.vegvesen.no/' :
+  `https://trafikk.vegvesen.no/?lat=${cam.lat}&lon=${cam.lng}&zoom=14`;
+
+// ---------- KART ----------
+function initMap() {
+  map = L.map('map', { center: [59.05, 5.85], zoom: 8 });
+  baseLayer = L.tileLayer(TILES.streets, { maxZoom: 20, attribution: '&copy; Google' }).addTo(map);
+  trafficLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=h,traffic&x={x}&y={y}&z={z}', { maxZoom: 20, opacity: .9 }).addTo(map);
+  markerGroup = L.layerGroup().addTo(map);
+  // moveend dekker også zoomend; debounce hindrer at strømmene startes om igjen under panorering
+  map.on('moveend', () => { updateBbox(); clearTimeout(debounceTimer); debounceTimer = setTimeout(applyFilters, 300); });
+  updateBbox();
+}
+
+function setMapLayer(type) {
+  map.removeLayer(baseLayer);
+  baseLayer = L.tileLayer(TILES[type], { maxZoom: 20 }).addTo(map);
+  baseLayer.bringToBack();
+  document.getElementById('btnLayerStreets').className = (type === 'streets' ? ON : OFF) + ' text-xs';
+  document.getElementById('btnLayerSat').className = (type === 'satellite' ? ON : OFF) + ' text-xs';
+}
+
+function zoomToRegion(r) {
+  const t = {
+    all: [[59.05, 5.85], 8], nordjæren: [[58.93, 5.71], 11], haugalandet: [[59.39, 5.38], 11],
+    jæren: [[58.63, 5.90], 10], sirdal: [[58.83, 6.42], 10]
+  }[r] || [[59.05, 5.85], 8];
+  map.flyTo(t[0], t[1], { duration: .7 });
+}
+
+function updateBbox() {
+  const b = map.getBounds();
+  document.getElementById('bboxCoordsText').textContent = `${b.getSouth().toFixed(2)}°N – ${b.getNorth().toFixed(2)}°N`;
+}
+
+function setCategory(cat) {
+  selectedCategory = cat;
+  document.querySelectorAll('#catButtons button').forEach(b => b.className = b.dataset.cat === cat ? ON : OFF);
+  applyFilters();
+}
+
+// ---------- AVSPILLING ----------
+function setStatus(id, state, label) {
+  const el = document.getElementById('status-' + id);
+  if (!el) return;
+  const m = { loading: ['Laster…', 'text-slate-400'], live: ['● Live', 'text-emerald-400'],
+              error: ['Feil', 'text-red-400'], none: ['Ingen strøm', 'text-slate-500'] }[state];
+  el.textContent = label || m[0];
+  el.className = 'font-mono ' + m[1];
+}
+
+// En spiller per kort. Video og bilder kjører bare mens kortet er synlig på skjermen
+// (starter automatisk når det rulles inn, stopper når det rulles ut).
+const controllers = new Map(); // element -> { on, start, stop }
+const io = new IntersectionObserver(entries => entries.forEach(e => {
+  const p = controllers.get(e.target);
+  if (!p) return;
+  if (e.isIntersecting && !p.on) { p.on = true; p.start(); }
+  else if (!e.isIntersecting && p.on) { p.on = false; p.stop(); }
+}), { rootMargin: '200px' });
+
+function destroyPlayers() {
+  controllers.forEach(p => p.on && p.stop());
+  controllers.clear();
+  io.disconnect();
+}
+
+function makeController(cam, screen) {
+  const ctl = { on: false, start() {}, stop() {} };
+  const msg = document.createElement('div');
+  msg.className = 'absolute inset-0 flex flex-col items-center justify-center gap-2 text-center p-3 text-xs text-slate-300 font-mono';
+  const showMsg = text => {
+    msg.innerHTML = `<p>${esc(text)}</p><a href="${esc(detailUrl(cam))}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-sky-500 text-slate-950 font-semibold font-sans">Åpne kamera ↗</a>`;
+    screen.append(msg);
+  };
+
+  if (cam.streamUrl) {
+    const v = document.createElement('video');
+    v.className = 'absolute inset-0 w-full h-full object-cover bg-black';
+    v.muted = true; v.playsInline = true; v.autoplay = true; v.controls = true;
+    v.onplaying = () => { msg.remove(); setStatus(cam.id, 'live'); };
+    screen.prepend(v);
+    let hls = null;
+    const fail = () => { setStatus(cam.id, 'error'); showMsg('Strømmen svarer ikke akkurat nå'); };
+    ctl.start = () => {
+      msg.remove();
+      setStatus(cam.id, 'loading');
+      if (window.Hls && Hls.isSupported()) {
+        hls = new Hls({ liveSyncDurationCount: 3, maxBufferLength: 10 });
+        hls.on(Hls.Events.ERROR, (_, d) => {
+          if (!d.fatal) return;
+          hls.destroy(); hls = null; fail();
+          setTimeout(() => ctl.on && !hls && ctl.start(), 30000); // prøv igjen etter 30 s
+        });
+        hls.loadSource(cam.streamUrl);
+        hls.attachMedia(v);
+      } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
+        v.src = cam.streamUrl; v.onerror = fail;   // Safari/iOS spiller HLS direkte
+      } else fail();
+      v.play().catch(() => {});
+    };
+    ctl.stop = () => {
+      if (hls) { hls.destroy(); hls = null; }
+      v.removeAttribute('src'); v.load();
+    };
+    return ctl;
+  }
+
+  const img = document.createElement('img');
+  img.className = 'absolute inset-0 w-full h-full object-cover bg-black';
+  img.alt = cam.name; img.decoding = 'async';
+  screen.prepend(img);
+  let t = 0;
+  const load = () => {
+    const u = new URL(cam.imageUrl, location.href);
+    u.searchParams.set('t', Date.now());
+    img.src = u.href;
+  };
+  img.onload = () => { msg.remove(); setStatus(cam.id, 'live', '● ' + new Date().toLocaleTimeString('no-NO', { hour12: false })); };
+  img.onerror = () => { setStatus(cam.id, 'error'); showMsg('Bildet kunne ikke hentes'); };
+  ctl.start = () => { setStatus(cam.id, 'loading'); load(); t = setInterval(load, (cam.interval || IMAGE_REFRESH_SECONDS) * 1000); };
+  ctl.stop = () => clearInterval(t);
+  return ctl;
+}
+
+function mountPlayer(cam) {
+  const el = document.getElementById('player-' + cam.id);
+  if (!el) return;
+
+  if (!cam.streamUrl && !cam.imageUrl) {
+    setStatus(cam.id, 'none');
+    el.innerHTML = `<div class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center p-3">
+      <p class="text-xs text-slate-400">Ingen strøm eller bilde lagt inn</p>
+      <a href="${esc(detailUrl(cam))}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-sky-500 text-slate-950 font-semibold text-xs">Åpne på trafikk.vegvesen.no ↗</a></div>`;
+    return;
+  }
+
+  controllers.set(el, makeController(cam, el));
+  io.observe(el);
+}
+
+// ---------- FILTER + GRID ----------
+function applyFilters() {
+  if (!map) return;
+  const bounds = map.getBounds();
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+
+  const visible = CAMERAS.filter(c =>
+    (c.lat == null || bounds.contains([c.lat, c.lng])) &&
+    (selectedCategory === 'ALL' || c.category === selectedCategory) &&
+    (!q || [c.name, c.road, c.municipality].some(s => s.toLowerCase().includes(q)))
+  ).sort((a, b) => !!(b.streamUrl || b.imageUrl) - !!(a.streamUrl || a.imageUrl)); // kameraer med innhold først
+
+  document.getElementById('viewportCountBadge').textContent = visible.length;
+  document.getElementById('gridCountBadge').textContent = visible.length;
+
+  // Ikke bygg alt på nytt (og start strømmene på nytt) hvis utvalget er likt
+  const key = visible.map(c => c.id).join(',');
+  if (key === lastKey) return;
+  lastKey = key;
+
+  destroyPlayers();
+  markerGroup.clearLayers();
+  seenPos.clear();
+  const grid = document.getElementById('cameraGrid');
+
+  if (!visible.length) {
+    grid.innerHTML = `<div class="col-span-full bg-ops-panel border border-ops-border rounded-xl p-8 text-center text-sm text-slate-300">Ingen noder i dette kartutsnittet. Zoom ut eller trykk «Vis hele Sør-Vest».</div>`;
+    return;
+  }
+
+  grid.innerHTML = visible.map(c => `
+    <article class="bg-ops-card border border-ops-border rounded-2xl overflow-hidden flex flex-col">
+      <div class="px-3 py-2 bg-slate-900/90 border-b border-ops-border flex items-center justify-between gap-2">
+        <div class="flex items-center gap-1.5 min-w-0">
+          <span class="px-1.5 py-0.5 text-[10px] font-mono font-bold rounded bg-sky-500/20 text-sky-400 shrink-0">${esc(c.road)}</span>
+          <h3 class="font-semibold text-xs text-white truncate" title="${esc(c.name)}">${esc(c.name)}</h3>
+        </div>
+        <span class="text-[11px] text-slate-400 shrink-0">${esc(c.municipality)}</span>
+      </div>
+      <div id="player-${c.id}" class="relative bg-black aspect-video overflow-hidden"></div>
+      <div class="px-3 py-2 bg-slate-950/90 flex items-center justify-between text-[11px]">
+        <span class="text-slate-400 font-mono">${c.lat == null ? 'GPS: ukjent' : `GPS: ${c.lat.toFixed(3)}, ${c.lng.toFixed(3)}`}</span>
+        <span id="status-${c.id}" class="font-mono text-slate-400"></span>
+      </div>
+    </article>`).join('');
+
+  visible.forEach(c => {
+    mountPlayer(c);
+
+    if (c.lat != null) {
+      const icon = L.divIcon({
+        html: '<div class="custom-marker w-6 h-6 bg-sky-500 border-2 border-slate-950 text-[11px]">📷</div>',
+        className: '', iconSize: [24, 24], iconAnchor: [12, 12]
+      });
+      L.marker(spread(c), { icon }).bindPopup(`
+        <div style="font-size:12px"><b>${esc(c.name)}</b><br>${esc(c.municipality)}<br>
+        <a href="${esc(detailUrl(c))}" target="_blank" rel="noopener" style="color:#38BDF8">Åpne vegkamera ↗</a></div>`)
+        .addTo(markerGroup);
+    }
+  });
+}
+
+let sig = '';
+const CAT_LABELS = { HOVEDVEI: '🛣️ Hovedvei', FJELL: '❄️ Fjell', ANDRE: '⚓ Havn & By' };
+
+function buildCatButtons() {
+  const cats = ['ALL', ...new Set(CAMERAS.map(c => c.category))];
+  if (!cats.includes(selectedCategory)) selectedCategory = 'ALL';
+  document.getElementById('catButtons').replaceChildren(...cats.map(cat => {
+    const b = document.createElement('button');
+    b.dataset.cat = cat;
+    b.textContent = cat === 'ALL' ? 'Alle' : (CAT_LABELS[cat] || cat);
+    b.className = cat === selectedCategory ? ON : OFF;
+    b.onclick = () => setCategory(cat);
+    return b;
+  }));
+}
+
+// Kameralisten har ingen koordinater: Vegvesen-kameraer plasseres etter kamera-ID, de andre etter navn.
 const VV = {
   1129016: [58.96207, 5.6147738],   // Sundekrossen
   1129018: [59.122208, 5.680165],   // Rennesøy
@@ -136,7 +358,7 @@ const VV = {
   1129027: [59.0126, 5.635277],     // Harestad
   1129032: [58.89665, 5.677254],    // Solasplitten
   1129037: [59.17073, 5.4504027],   // Arsvågen ferjekai
-  1129038: [58.95924, 5.7223744],   // Kiellandsmyra
+  1129038: [58.95924, 5.7223744]    // Kiellandsmyra
 };
 const BY_NAME = [
   [/kannik.*vest/i, [58.96525, 5.72560]],
@@ -145,161 +367,86 @@ const BY_NAME = [
   [/smedasund/i, [59.41212, 5.26693]],
   [/oljemuse/i, [58.97360, 5.73476]],
   [/sandnes.*v[åa]gen|v[åa]gen.*sandnes/i, [58.85245, 5.74237]],
-  [/hanafjell/i, [58.8335, 5.7960]],
+  [/hanafjell/i, [58.8335, 5.7960]]
 ];
 function where(cam) {
-  const id = (cam.url.match(/\/(11\d{5})_(\d)/) || [])[1];
+  const id = ((cam.url || '').match(/\/(11\d{5})_(\d)/) || [])[1];
   if (id && VV[id]) return VV[id];
-  const hit = BY_NAME.find(([re]) => re.test(cam.name));
+  const hit = BY_NAME.find(([re]) => re.test(cam.name || ''));
   return hit ? hit[1] : null;
 }
 
-let map = null, pins = null;
-function drawMap(list) {
-  if (!window.L) return;
-  if (!map) {
-    map = L.map('map', { scrollWheelZoom: false, zoomSnap: 0.25 }).setView([58.95, 5.72], 11);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19, className: 'night',
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-    }).addTo(map);
-    map.on('focus', () => map.scrollWheelZoom.enable());
-    map.on('blur', () => map.scrollWheelZoom.disable());
-    pins = L.layerGroup().addTo(map);
-  }
-  pins.clearLayers();
-  const seen = new Map(), pts = [], missing = [];
-  list.forEach(cam => {
-    let ll = where(cam);
-    if (!ll) { missing.push(cam.name); return; }
-    // two cameras on the same mast: fan the second pin out a little so both can be tapped
-    const k = ll.join(), n = seen.get(k) || 0; seen.set(k, n + 1);
-    if (n) ll = [ll[0] + 0.0012 * Math.sin(n * 2.1), ll[1] + 0.0024 * Math.cos(n * 2.1)];
-    const live = cam.type === 'hls';
-    const m = L.marker(ll, {
-      icon: L.divIcon({ className: '', html: `<div class="pin ${live ? '' : 'still'}"></div>`, iconSize: [22, 22], iconAnchor: [11, 11] }),
-      title: cam.name, keyboard: true, riseOnHover: true
-    }).bindTooltip(cam.name + (live ? '' : ' · stillbilde'), { direction: 'top', offset: [0, -12] });
-    m.on('click', () => open(cam));
-    m.addTo(pins); pts.push(ll);
-  });
-  // zoom to where most cameras are; a lone far-off one (Haugesund) stays reachable by zooming out
-  if (pts.length) {
-    const mid = i => pts.map(q => q[i]).sort((a, b) => a - b)[pts.length >> 1];
-    const c = L.latLng(mid(0), mid(1));
-    const near = pts.filter(q => c.distanceTo(q) < 25000);
-    map.fitBounds(near.length ? near : pts, { padding: [40, 40], maxZoom: 14 });
-  }
-  const nm = $('#nomap');
-  nm.hidden = !missing.length;
-  nm.textContent = missing.length ? 'Ikke på kartet (mangler posisjon): ' + missing.join(', ') : '';
+// To kameraer på samme mast: andre pinne vifter litt ut, så begge kan klikkes
+const seenPos = new Map();
+function spread(c) {
+  const k = c.lat + ',' + c.lng, n = seenPos.get(k) || 0;
+  seenPos.set(k, n + 1);
+  return n ? [c.lat + 0.0012 * Math.sin(n * 2.1), c.lng + 0.0024 * Math.cos(n * 2.1)] : [c.lat, c.lng];
 }
 
-function clock() { $('#clock').textContent = new Date().toLocaleTimeString('no-NO'); }
-setInterval(clock, 1000); clock();
+// Zoomer til området de fleste kameraene ligger i (ett langt unna, f.eks. Haugesund, ignoreres)
+function fitToCameras() {
+  const pts = CAMERAS.filter(c => c.lat != null && c.lng != null).map(c => [c.lat, c.lng]);
+  if (!pts.length) return;
+  const mid = i => pts.map(q => q[i]).sort((a, b) => a - b)[pts.length >> 1];
+  const c = L.latLng(mid(0), mid(1));
+  const near = pts.filter(q => c.distanceTo(q) < 25000);
+  map.fitBounds(near.length ? near : pts, { padding: [40, 40], maxZoom: 14 });
+}
 
-// one media element per tile; videos only play while on screen
-function mount(screen, cam, big = false) {
-  const age = document.createElement('span'); age.className = 'age';
-  const msg = document.createElement('div'); msg.className = 'msg';
-  if (cam.type === 'hls') {
-    const v = document.createElement('video');
-    v.muted = true; v.playsInline = true; v.autoplay = true; if (big) v.controls = true;
-    screen.prepend(v);
-    let hls = null;
-    const fail = () => { msg.textContent = 'Strømmen svarer ikke akkurat nå'; screen.append(msg); };
-    const start = () => {
-      msg.remove();
-      if (window.Hls && Hls.isSupported()) {
-        hls = new Hls({ liveSyncDurationCount: 3, maxBufferLength: 10 });
-        hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) { hls.destroy(); hls = null; fail(); setTimeout(() => !hls && start(), 30000); } });
-        hls.loadSource(cam.url); hls.attachMedia(v);
-      } else if (v.canPlayType('application/vnd.apple.mpegurl')) { v.src = cam.url; v.onerror = fail; }
-      else fail();
-      v.play().catch(() => {});
-    };
-    const stop = () => { if (hls) { hls.destroy(); hls = null; } v.removeAttribute('src'); v.load(); };
-    return { start, stop };
-  }
-  const img = document.createElement('img'); img.alt = cam.name; img.decoding = 'async';
-  screen.prepend(img); screen.append(age);
-  let t = 0, at = 0, ti = 0;
-  const load = () => { const u = new URL(cam.url); u.searchParams.set('t', Date.now()); img.src = u; };
-  img.onload = () => { at = Date.now(); msg.remove(); };
-  img.onerror = () => { msg.textContent = 'Bildet kunne ikke hentes'; screen.append(msg); };
-  const tick = () => { age.textContent = at ? Math.round((Date.now() - at) / 1000) + ' s siden' : 'laster'; };
+// Tilpasser et element fra kamera-JSON (type 'hls' | 'image', url, wall, provider, address …) til sidens format
+function normalize(c, i) {
+  const hls = c.streamUrl || (c.type === 'hls' ? c.url : '');
+  const img = c.imageUrl || (c.type !== 'hls' ? c.url : '');
+  const ll = where({ url: hls || img, name: c.name });
   return {
-    start() { load(); t = setInterval(load, (cam.interval || 60) * 1000); ti = setInterval(tick, 1000); },
-    stop() { clearInterval(t); clearInterval(ti); }
+    id: String(c.id || 'x' + i).replace(/\W/g, '_'),
+    name: c.name || 'Kamera',
+    road: c.road || c.provider || '',
+    municipality: c.municipality || c.address || '',
+    lat: c.lat ?? (ll ? ll[0] : null), lng: c.lng ?? c.lon ?? (ll ? ll[1] : null),
+    category: c.category || c.wall || 'ANDRE',
+    streamUrl: hls || '', imageUrl: hls ? '' : (img || ''), interval: c.interval
   };
 }
 
-const io = new IntersectionObserver(es => es.forEach(e => {
-  const p = players.get(e.target); if (!p) return;
-  if (e.isIntersecting && !p.on) { p.on = true; p.start(); }
-  else if (!e.isIntersecting && p.on) { p.on = false; p.stop(); }
-}), { rootMargin: '200px' });
-
-function tile(cam) {
-  const b = document.createElement('button'); b.className = 'tile'; b.type = 'button';
-  b.setAttribute('aria-label', 'Åpne ' + cam.name + ' i stort format');
-  const live = cam.type === 'hls';
-  b.innerHTML = `<div class="screen"><span class="badge ${live ? 'live' : 'still'}"><i></i>${live ? 'Direkte' : 'Stillbilde'}</span></div>
-    <div class="cap"><strong>${esc(cam.name)}</strong><span>${esc([cam.provider, cam.address || cam.municipality].filter(Boolean).join(' · '))}</span></div>`;
-  players.set(b, mount($('.screen', b), cam));
-  io.observe(b);
-  b.onclick = () => open(cam);
-  return b;
+async function fetchList(url) {
+  const r = await fetch(url, { cache: 'no-store' });
+  if (!r.ok) throw new Error(r.status);
+  const j = await r.json();
+  const raw = Array.isArray(j) ? j : (j.state && j.state.cameras) || j.cameras || [];
+  return raw.filter(c => c.url || c.streamUrl || c.imageUrl).map(normalize);
 }
 
-function render() {
-  players.forEach(p => p.on && p.stop()); players.clear(); io.disconnect();
-  const walls = [...new Set(cams.map(c => c.wall || 'Andre'))];
-  const nav = $('#nav'); nav.innerHTML = '';
-  ['Alle', ...walls].forEach(w => {
-    const n = document.createElement('button'); n.type = 'button'; n.textContent = w;
-    n.setAttribute('aria-pressed', w === filter); n.onclick = () => { filter = w; render(); };
-    nav.append(n);
-  });
-  drawMap(cams.filter(c => filter === 'Alle' || (c.wall || 'Andre') === filter));
-  const main = $('#walls'); main.innerHTML = '';
-  walls.filter(w => filter === 'Alle' || w === filter).forEach(w => {
-    const list = cams.filter(c => (c.wall || 'Andre') === w);
-    const s = document.createElement('section');
-    s.innerHTML = `<h2>${esc(w)} <small>${list.length} kamera${list.length === 1 ? '' : 'er'}</small></h2><div class="grid"></div>`;
-    list.forEach(c => $('.grid', s).append(tile(c)));
-    main.append(s);
-  });
-  const live = cams.filter(c => c.type === 'hls').length;
-  $('#count').innerHTML = `<b>${cams.length}</b> kameraer · <b>${live}</b> direkte`;
-}
-
-function open(cam) {
-  const d = document.createElement('div'); d.className = 'big'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', cam.name);
-  d.innerHTML = `<div class="bar"><div><strong>${esc(cam.name)}</strong><br>${cam.source ? `<a href="${esc(cam.source)}" target="_blank" rel="noopener">Kilde: ${esc(cam.provider || cam.source)}</a>` : `<a>${esc(cam.provider || '')}</a>`}</div><button class="x" type="button" aria-label="Lukk">×</button></div><div class="screen"></div>`;
-  const p = mount($('.screen', d), cam, true); p.start();
-  const close = () => { p.stop(); d.remove(); removeEventListener('keydown', key); };
-  const key = e => e.key === 'Escape' && close();
-  $('.x', d).onclick = close; d.onclick = e => e.target === d && close();
-  addEventListener('keydown', key);
-  document.body.append(d); $('.x', d).focus();
-}
-
-async function load() {
-  try {
-    const r = await fetch(API, { cache: 'no-store' });
-    if (!r.ok) throw new Error(r.status);
-    const j = await r.json();
-    const list = (j.state && j.state.cameras || []).filter(c => c.url);
-    const s = JSON.stringify(list);
-    if (s !== sig) { sig = s; cams = list; render(); }
-    $('#upd').textContent = new Date().toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' });
-  } catch (e) {
-    if (!cams.length) $('#count').textContent = 'Fikk ikke hentet kameralisten. Prøver igjen om et minutt.';
-    setTimeout(load, 60000); return;
+async function loadCameras(force) {
+  for (const url of CAMERA_SOURCES) {
+    try {
+      const list = await fetchList(url);
+      if (!list.length) continue;
+      const s = JSON.stringify(list);
+      if (s !== sig || force) { sig = s; CAMERAS = list; buildCatButtons(); fitToCameras(); }
+      break;
+    } catch (e) {
+      console.warn('Kunne ikke hente ' + url + ' (CORS, nettverk eller feil format?)', e);
+    }
   }
+  if (force || sig) { lastKey = null; applyFilters(); }
 }
-load(); setInterval(load, 300000);
+
+function refreshCameras() { loadCameras(true); }
+
+setInterval(() => {
+  document.getElementById('liveClock').textContent = new Date().toLocaleTimeString('no-NO', { hour12: false });
+}, 1000);
+
+window.addEventListener('DOMContentLoaded', () => {
+  initMap();
+  setMapLayer('streets');
+  buildCatButtons();
+  setCategory('ALL');
+  loadCameras();
+  setInterval(loadCameras, RELOAD_MINUTES * 60000);
+});
 </script>
 </body>
 </html>

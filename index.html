@@ -11,7 +11,7 @@
   --acc:#19c8ff; --ok:#2ee6a6; --err:#ff4d5e; --warn:#ffb020; --off:#6b7a8c;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  --tile-min: min(100%, 480px);
+  --tile-min: min(100%, 460px);
 }
 *{box-sizing:border-box;margin:0}
 html,body{height:100%}
@@ -42,7 +42,7 @@ header.top{display:flex;align-items:center;gap:14px;padding:8px 16px;background:
 /* Layout */
 main{display:flex;position:relative;min-height:0;height:100%;overflow:hidden}
 
-/* Map Drawer (sammenleggbart) */
+/* Map Drawer */
 #mapPane{
   width: 420px;
   max-width: 90vw;
@@ -86,6 +86,21 @@ main{display:flex;position:relative;min-height:0;height:100%;overflow:hidden}
   gap:12px;
   align-content:start;
 }
+
+/* Dynamisk skalering ved få kameraer */
+#wall.count-1 {
+  grid-template-columns: 1fr;
+}
+#wall.count-2 {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 550px), 1fr));
+}
+#wall.count-3 {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+}
+#wall.count-4 {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
+}
+
 .empty{grid-column:1/-1;color:var(--mut);text-align:center;padding:60px 20px}
 
 /* Flis (Tile) */
@@ -197,7 +212,6 @@ dialog menu{display:flex;gap:8px;justify-content:flex-end;padding:0;margin-top:6
 </header>
 
 <main>
-  <!-- Skjulbart kartpanel -->
   <aside id="mapPane">
     <div class="map-header">
       <span>Kartvisning</span>
@@ -216,7 +230,6 @@ dialog menu{display:flex;gap:8px;justify-content:flex-end;padding:0;margin-top:6
     </div>
   </aside>
 
-  <!-- Kamera-vegg -->
   <section id="wallPane">
     <div class="walltools">
       <div class="chips" id="chips"></div>
@@ -225,9 +238,9 @@ dialog menu{display:flex;gap:8px;justify-content:flex-end;padding:0;margin-top:6
       <label style="font-size:12px;color:var(--mut);display:flex;align-items:center;gap:6px">
         Størrelse:
         <select id="size">
-          <option value="min(100%, 320px)">Mindre</option>
-          <option value="min(100%, 480px)" selected>Standard (Dynamisk)</option>
-          <option value="min(100%, 680px)">Store ruter</option>
+          <option value="min(100%, 320px)">Kompakt</option>
+          <option value="min(100%, 460px)" selected>Standard (Dynamisk)</option>
+          <option value="min(100%, 650px)">Store ruter</option>
           <option value="100%">Full bredde (1 per rad)</option>
         </select>
       </label>
@@ -341,7 +354,6 @@ async function loadCams(){
     if (Array.isArray(saved) && saved.length > 0){ cams = saved; return; }
   }catch(e){}
   cams = JSON.parse(JSON.stringify(DEFAULT_CAMERAS));
-  // Sorterer direktestrømmer først ved førstegangskjøring
   cams.sort((a,b) => (isLiveType(b.type)?1:0) - (isLiveType(a.type)?1:0));
 }
 function saveCams(){
@@ -450,7 +462,6 @@ function buildTile(cam){
     </header>
     <div class="media"></div>`;
 
-  // Drag and drop event listeners
   el.addEventListener("dragstart", e => {
     draggedItem = el;
     el.classList.add("dragging");
@@ -499,12 +510,22 @@ function buildTile(cam){
   return el;
 }
 
+function updateWallLayoutClass(visibleCount){
+  wall.classList.remove("count-1", "count-2", "count-3", "count-4");
+  if ($("#size").value === "100%") return;
+  if (visibleCount === 1) wall.classList.add("count-1");
+  else if (visibleCount === 2) wall.classList.add("count-2");
+  else if (visibleCount === 3) wall.classList.add("count-3");
+  else if (visibleCount === 4) wall.classList.add("count-4");
+}
+
 function renderWall(){
   tiles.forEach(t => { t.mount && t.mount.destroy(); clearTimeout(t.retry); });
   tiles.clear();
   wall.innerHTML = "";
   if (!cams.length){
     wall.innerHTML = '<div class="empty">Ingen kameraer lagt til.</div>';
+    updateWallLayoutClass(0);
     return;
   }
   cams.forEach(cam => {
@@ -525,6 +546,7 @@ function visibleCams(){
 function applyFilter(){
   const vis = new Set(visibleCams().map(c=>c.id));
   tiles.forEach((t,id) => t.el.style.display = vis.has(id) ? "" : "none");
+  updateWallLayoutClass(vis.size);
   mapApi && mapApi.setVisible && mapApi.setVisible(vis);
 }
 function buildChips(){
@@ -584,7 +606,7 @@ document.addEventListener("keydown", e => {
   }
 });
 
-/* Kart (Leaflet / OSM som standard) */
+/* Kart */
 let mapApi = null;
 const mapPane = $("#mapPane");
 
@@ -705,7 +727,10 @@ $("#btnReset").onclick = () => {
 
 /* Verktøy */
 $("#q").addEventListener("input", e => { filterText = e.target.value; applyFilter(); });
-$("#size").onchange = e => document.documentElement.style.setProperty("--tile-min", e.target.value);
+$("#size").onchange = e => {
+  document.documentElement.style.setProperty("--tile-min", e.target.value);
+  applyFilter();
+};
 $("#btnWallFs").onclick = () => {
   if (document.fullscreenElement===document.documentElement) document.exitFullscreen();
   else document.documentElement.requestFullscreen?.().catch(()=>{});

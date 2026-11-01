@@ -82,13 +82,15 @@ body { background:#090D16; color:#F8FAFC; font-family:system-ui,-apple-system,'S
 
 <script>
 // ---------- KONFIG ----------
-const MAX_AUTOPLAY = 8; // maks antall strømmer som starter av seg selv (resten får en spill-av-knapp)
+const IMAGE_REFRESH_SECONDS = 30; // hvor ofte stillbilder lastes på nytt
 
-// C(id, navn, vei, kommune, lat, lng, kategori, streamUrl)
-// Legg inn .m3u8-adressen som siste verdi for å få direktestrøm.
+// C(id, navn, vei, kommune, lat, lng, kategori, streamUrl, imageUrl)
+// Video:      legg inn .m3u8-adressen som 8. verdi.
+// Stillbilde: la 8. verdi være '' og legg inn bilde-adressen (.jpg) som 9. verdi.
+//   Eksempel: C('c1', 'E39 Lura', 'E39', 'Sandnes', 58.886, 5.733, 'HOVEDVEI', '', 'https://.../bilde.jpg')
 // lat/lng = null gir et kort som alltid vises (uavhengig av kartutsnitt).
-const C = (id, name, road, municipality, lat, lng, category, streamUrl = '') =>
-  ({ id, name, road, municipality, lat, lng, category, streamUrl });
+const C = (id, name, road, municipality, lat, lng, category, streamUrl = '', imageUrl = '') =>
+  ({ id, name, road, municipality, lat, lng, category, streamUrl, imageUrl });
 
 const CAMERAS = [
   C('v1',  'Vegvesen kamera 1129024_2', 'Vegvesen', 'Posisjon ikke satt', null, null, 'HOVEDVEI',
@@ -118,6 +120,7 @@ let map, baseLayer, trafficLayer, markerGroup;
 let selectedCategory = 'ALL';
 let lastKey = null;
 const players = new Map(); // id -> Hls-instans
+const timers = new Set();  // oppdateringsløkker for stillbilder
 let debounceTimer;
 
 const TILES = {
@@ -170,36 +173,52 @@ function setCategory(cat) {
 }
 
 // ---------- AVSPILLING ----------
-function setStatus(id, state) {
+function setStatus(id, state, label) {
   const el = document.getElementById('status-' + id);
   if (!el) return;
   const m = { loading: ['Laster…', 'text-slate-400'], live: ['● Live', 'text-emerald-400'],
               error: ['Feil', 'text-red-400'], none: ['Ingen strøm', 'text-slate-500'] }[state];
-  el.textContent = m[0];
+  el.textContent = label || m[0];
   el.className = 'font-mono ' + m[1];
 }
 
 function destroyPlayers() {
   players.forEach(h => h.destroy());
   players.clear();
+  timers.forEach(t => clearInterval(t));
+  timers.clear();
 }
 
-function mountPlayer(cam, auto) {
+function mountImage(cam, mount) {
+  setStatus(cam.id, 'loading');
+  const img = document.createElement('img');
+  img.className = 'w-full h-full object-cover bg-black';
+  img.alt = cam.name;
+  mount.replaceChildren(img);
+  const load = () => {
+    const next = new Image(); // last forhånds, så bildet ikke blinker
+    next.onload = () => {
+      img.src = next.src;
+      setStatus(cam.id, 'live', '● ' + new Date().toLocaleTimeString('no-NO', { hour12: false }));
+    };
+    next.onerror = () => setStatus(cam.id, 'error');
+    next.src = cam.imageUrl + (cam.imageUrl.includes('?') ? '&' : '?') + '_=' + Date.now();
+  };
+  load();
+  timers.add(setInterval(load, IMAGE_REFRESH_SECONDS * 1000));
+}
+
+function mountPlayer(cam) {
   const mount = document.getElementById('player-' + cam.id);
   if (!mount) return;
+
+  if (!cam.streamUrl && cam.imageUrl) return mountImage(cam, mount);
 
   if (!cam.streamUrl) {
     setStatus(cam.id, 'none');
     mount.innerHTML = `<div class="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center p-3">
-      <p class="text-xs text-slate-400">Ingen direktestrøm lagt inn</p>
+      <p class="text-xs text-slate-400">Ingen strøm eller bilde lagt inn</p>
       <a href="${esc(detailUrl(cam))}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-sky-500 text-slate-950 font-semibold text-xs">Åpne på trafikk.vegvesen.no ↗</a></div>`;
-    return;
-  }
-
-  if (!auto) {
-    setStatus(cam.id, 'none');
-    mount.innerHTML = `<button class="absolute inset-0 w-full text-sm text-sky-300 hover:bg-slate-900">▶ Spill av</button>`;
-    mount.firstElementChild.onclick = () => { setStatus(cam.id, 'loading'); mountPlayer(cam, true); };
     return;
   }
 
@@ -253,7 +272,7 @@ function applyFilters() {
     (c.lat == null || bounds.contains([c.lat, c.lng])) &&
     (selectedCategory === 'ALL' || c.category === selectedCategory) &&
     (!q || [c.name, c.road, c.municipality].some(s => s.toLowerCase().includes(q)))
-  ).sort((a, b) => !!b.streamUrl - !!a.streamUrl); // kameraer med strøm først
+  ).sort((a, b) => !!(b.streamUrl || b.imageUrl) - !!(a.streamUrl || a.imageUrl)); // kameraer med innhold først
 
   document.getElementById('viewportCountBadge').textContent = visible.length;
   document.getElementById('gridCountBadge').textContent = visible.length;
@@ -288,11 +307,8 @@ function applyFilters() {
       </div>
     </article>`).join('');
 
-  let started = 0;
   visible.forEach(c => {
-    const auto = !!c.streamUrl && started < MAX_AUTOPLAY;
-    if (auto) started++;
-    mountPlayer(c, auto);
+    mountPlayer(c);
 
     if (c.lat != null) {
       const icon = L.divIcon({

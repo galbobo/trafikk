@@ -12,6 +12,9 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  <!-- HLS.js for .m3u8-strømmer -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js"></script>
+
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -43,15 +46,43 @@
   </script>
 
   <style>
-    body { background-color: #090D16; color: #F8FAFC; }
+    html, body { height: 100%; }
+    body {
+      background-color: #090D16;
+      color: #F8FAFC;
+      font-family: 'Inter', sans-serif;
+    }
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: #090D16; }
     ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 4px; }
-    .leaflet-container { background: #0B111E !important; font-family: 'Inter', sans-serif; }
-    .leaflet-popup-content-wrapper { background: #111827 !important; color: #F8FAFC !important; border: 1px solid #334155; border-radius: 0.75rem !important; }
+    .leaflet-container {
+      background: #0B111E !important;
+      font-family: 'Inter', sans-serif;
+    }
+    .leaflet-popup-content-wrapper {
+      background: #111827 !important;
+      color: #F8FAFC !important;
+      border: 1px solid #334155;
+      border-radius: 0.75rem !important;
+    }
     .leaflet-popup-tip { background: #111827 !important; }
-    .custom-marker { display: flex; align-items: center; justify-content: center; border-radius: 9999px; box-shadow: 0 0 12px rgba(0,0,0,0.65); transition: transform 0.15s ease; }
-    .custom-marker:hover { transform: scale(1.22); z-index: 1000 !important; }
+    .custom-marker {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 9999px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.65);
+      transition: transform 0.15s ease;
+    }
+    .custom-marker:hover {
+      transform: scale(1.22);
+      z-index: 1000 !important;
+    }
+    .video-shell {
+      background:
+        radial-gradient(circle at top, rgba(56,189,248,0.14), transparent 40%),
+        linear-gradient(180deg, rgba(2,6,23,0.95), rgba(2,6,23,0.98));
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col selection:bg-sky-500 selection:text-white">
@@ -95,7 +126,6 @@
     </div>
   </header>
 
-  <!-- HOVEDINNHOLD -->
   <main class="flex-1 max-w-[1920px] w-full mx-auto px-4 lg:px-6 py-4 space-y-6">
 
     <!-- KARTSEKSJON -->
@@ -183,24 +213,24 @@
 
   <script>
     const CAMERAS = [
-      { id: 'c1', name: 'E39 Lura / Forus', road: 'E39', municipality: 'Sandnes', lat: 58.8861, lng: 5.7330, category: 'HOVEDVEI' },
-      { id: 'c2', name: 'E39 Ålgård / Figgjo', road: 'E39', municipality: 'Gjesdal', lat: 58.7654, lng: 5.8542, category: 'HOVEDVEI' },
-      { id: 'c3', name: 'Fv450 Hunnedalen', road: 'Fv450', municipality: 'Gjesdal / Sirdal', lat: 58.8260, lng: 6.3950, category: 'FJELL' },
-      { id: 'c4', name: 'E39 Mortavika Ferjekai', road: 'E39', municipality: 'Stavanger', lat: 59.1422, lng: 5.5880, category: 'HOVEDVEI' },
-      { id: 'c5', name: 'E39 Mekjarvik / Byfjordtunnelen', road: 'E39', municipality: 'Randaberg', lat: 59.0221, lng: 5.6224, category: 'HOVEDVEI' },
-      { id: 'c6', name: 'Rv509 Sola / Flyplassveien', road: 'Rv509', municipality: 'Sola', lat: 58.8870, lng: 5.6020, category: 'HOVEDVEI' },
-      { id: 'c7', name: 'Rv13 Ryfast / Solbakk', road: 'Rv13', municipality: 'Strand', lat: 59.0185, lng: 5.9510, category: 'HOVEDVEI' },
-      { id: 'c8', name: 'E39 Bue / Vikeså', road: 'E39', municipality: 'Bjerkreim', lat: 58.6380, lng: 6.0850, category: 'HOVEDVEI' },
-      { id: 'c9', name: 'E39 Helleland', road: 'E39', municipality: 'Eigersund', lat: 58.5240, lng: 6.2350, category: 'HOVEDVEI' },
-      { id: 'c10', name: 'Fv44 Jærveien / Bryne', road: 'Fv44', municipality: 'Time', lat: 58.7358, lng: 5.6475, category: 'HOVEDVEI' },
-      { id: 'c11', name: 'E39 Arsvågen Ferjekai', road: 'E39', municipality: 'Bokn', lat: 59.1705, lng: 5.4510, category: 'HOVEDVEI' },
-      { id: 'c12', name: 'E134 Aksdal Knutepunkt', road: 'E134', municipality: 'Tysvær', lat: 59.4230, lng: 5.4620, category: 'HOVEDVEI' },
-      { id: 'c13', name: 'Fv547 Karmsund bru', road: 'Fv547', municipality: 'Haugesund / Karmøy', lat: 59.3765, lng: 5.2950, category: 'HOVEDVEI' },
-      { id: 'c14', name: 'Rv13 Bratlandsdalen', road: 'Rv13', municipality: 'Suldal', lat: 59.6220, lng: 6.7910, category: 'FJELL' },
-      { id: 'c15', name: 'Fv520 Saudafjellet', road: 'Fv520', municipality: 'Sauda', lat: 59.6850, lng: 6.4820, category: 'FJELL' },
-      { id: 'c16', name: 'E134 Langfossen / Rullestad', road: 'E134', municipality: 'Etne', lat: 59.8450, lng: 6.3380, category: 'FJELL' },
-      { id: 'c17', name: 'Stavanger Vågen / Byfjorden', road: 'Bykamera', municipality: 'Stavanger', lat: 58.9775, lng: 5.7165, category: 'ANDRE' },
-      { id: 'c18', name: 'Sandnes havn / Vågen', road: 'Bykamera', municipality: 'Sandnes', lat: 58.8520, lng: 5.7350, category: 'ANDRE' }
+      { id: 'c1',  name: 'E39 Lura / Forus',                    road: 'E39',     municipality: 'Sandnes',             lat: 58.8861, lng: 5.7330, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c2',  name: 'E39 Ålgård / Figgjo',                 road: 'E39',     municipality: 'Gjesdal',             lat: 58.7654, lng: 5.8542, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c3',  name: 'Fv450 Hunnedalen',                   road: 'Fv450',   municipality: 'Gjesdal / Sirdal',    lat: 58.8260, lng: 6.3950, category: 'FJELL',    streamUrl: '', embedUrl: '' },
+      { id: 'c4',  name: 'E39 Mortavika Ferjekai',              road: 'E39',     municipality: 'Stavanger',           lat: 59.1422, lng: 5.5880, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c5',  name: 'E39 Mekjarvik / Byfjordtunnelen',     road: 'E39',     municipality: 'Randaberg',           lat: 59.0221, lng: 5.6224, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c6',  name: 'Rv509 Sola / Flyplassveien',          road: 'Rv509',   municipality: 'Sola',                lat: 58.8870, lng: 5.6020, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c7',  name: 'Rv13 Ryfast / Solbakk',               road: 'Rv13',    municipality: 'Strand',              lat: 59.0185, lng: 5.9510, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c8',  name: 'E39 Bue / Vikeså',                    road: 'E39',     municipality: 'Bjerkreim',           lat: 58.6380, lng: 6.0850, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c9',  name: 'E39 Helleland',                        road: 'E39',     municipality: 'Eigersund',           lat: 58.5240, lng: 6.2350, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c10', name: 'Fv44 Jærveien / Bryne',               road: 'Fv44',    municipality: 'Time',                lat: 58.7358, lng: 5.6475, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c11', name: 'E39 Arsvågen Ferjekai',               road: 'E39',     municipality: 'Bokn',                lat: 59.1705, lng: 5.4510, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c12', name: 'E134 Aksdal Knutepunkt',              road: 'E134',    municipality: 'Tysvær',              lat: 59.4230, lng: 5.4620, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c13', name: 'Fv547 Karmsund bru',                  road: 'Fv547',   municipality: 'Haugesund / Karmøy',  lat: 59.3765, lng: 5.2950, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c14', name: 'Rv13 Bratlandsdalen',                 road: 'Rv13',    municipality: 'Suldal',              lat: 59.6220, lng: 6.7910, category: 'FJELL',    streamUrl: '', embedUrl: '' },
+      { id: 'c15', name: 'Fv520 Saudafjellet',                  road: 'Fv520',   municipality: 'Sauda',               lat: 59.6850, lng: 6.4820, category: 'FJELL',    streamUrl: '', embedUrl: '' },
+      { id: 'c16', name: 'E134 Langfossen / Rullestad',         road: 'E134',    municipality: 'Etne',                lat: 59.8450, lng: 6.3380, category: 'FJELL',    streamUrl: '', embedUrl: '' },
+      { id: 'c17', name: 'Stavanger Vågen / Byfjorden',         road: 'Bykamera',municipality: 'Stavanger',           lat: 58.9775, lng: 5.7165, category: 'ANDRE',    streamUrl: '', embedUrl: '' },
+      { id: 'c18', name: 'Sandnes havn / Vågen',                road: 'Bykamera',municipality: 'Sandnes',             lat: 58.8520, lng: 5.7350, category: 'ANDRE',    streamUrl: '', embedUrl: '' }
     ];
 
     let map = null;
@@ -208,6 +238,19 @@
     let trafficLayer = null;
     let markerGroup = null;
     let selectedCategory = 'ALL';
+
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function cameraDetailUrl(cam) {
+      return `https://trafikk.vegvesen.no/?lat=${cam.lat}&lon=${cam.lng}&zoom=14`;
+    }
 
     function initMap() {
       map = L.map('map', {
@@ -239,27 +282,36 @@
 
     function setMapLayer(type) {
       if (baseLayer) map.removeLayer(baseLayer);
+
       if (type === 'streets') {
-        baseLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map);
+        baseLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+          maxZoom: 20
+        }).addTo(map);
+
         document.getElementById('btnLayerStreets').className = 'px-2.5 py-1 rounded text-xs bg-sky-500 text-slate-950 font-semibold transition';
         document.getElementById('btnLayerSat').className = 'px-2.5 py-1 rounded text-xs bg-slate-800 text-slate-300 hover:bg-slate-700 transition';
       } else {
-        baseLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map);
+        baseLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+          maxZoom: 20
+        }).addTo(map);
+
         document.getElementById('btnLayerSat').className = 'px-2.5 py-1 rounded text-xs bg-sky-500 text-slate-950 font-semibold transition';
         document.getElementById('btnLayerStreets').className = 'px-2.5 py-1 rounded text-xs bg-slate-800 text-slate-300 hover:bg-slate-700 transition';
       }
+
       baseLayer.bringToBack();
-      trafficLayer.bringToFront();
+      if (trafficLayer) trafficLayer.bringToFront();
     }
 
     function zoomToRegion(region) {
       const targets = {
-        all: { center: [59.05, 5.85], zoom: 8 },
+        all:       { center: [59.05, 5.85], zoom: 8 },
         nordjæren: { center: [58.93, 5.71], zoom: 11 },
-        haugalandet: { center: [59.39, 5.38], zoom: 11 },
-        jæren: { center: [58.63, 5.90], zoom: 10 },
-        sirdal: { center: [58.83, 6.42], zoom: 10 }
+        haugalandet:{ center: [59.39, 5.38], zoom: 11 },
+        jæren:     { center: [58.63, 5.90], zoom: 10 },
+        sirdal:    { center: [58.83, 6.42], zoom: 10 }
       };
+
       const t = targets[region] || targets.all;
       map.flyTo(t.center, t.zoom, { duration: 0.7 });
     }
@@ -267,25 +319,120 @@
     function updateBboxDisplay() {
       if (!map) return;
       const b = map.getBounds();
-      document.getElementById('bboxCoordsText').textContent = `Utsnitt: ${b.getSouth().toFixed(2)}°N – ${b.getNorth().toFixed(2)}°N`;
+      document.getElementById('bboxCoordsText').textContent =
+        `Utsnitt: ${b.getSouth().toFixed(2)}°N – ${b.getNorth().toFixed(2)}°N`;
     }
 
     function setCategory(cat) {
       selectedCategory = cat;
+
       ['ALL', 'HOVEDVEI', 'FJELL', 'ANDRE'].forEach(c => {
         const btn = document.getElementById('cat_' + c);
         if (!btn) return;
+
         if (c === cat) {
           btn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 transition';
         } else {
           btn.className = 'px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition';
         }
       });
+
       applyFilters();
+    }
+
+    function mountCameraPlayer(cam) {
+      const mount = document.getElementById(`player-${cam.id}`);
+      if (!mount) return;
+
+      const detailUrl = cameraDetailUrl(cam);
+      mount.innerHTML = '';
+
+      // 1) Direkte strøm hvis du har en ekte HLS/MP4-lenke
+      if (cam.streamUrl && cam.streamUrl.trim()) {
+        const video = document.createElement('video');
+        video.className = 'w-full h-full object-cover bg-black';
+        video.controls = true;
+        video.autoplay = true;
+        video.muted = true;
+        video.playsInline = true;
+        video.setAttribute('webkit-playsinline', 'true');
+
+        const isHls = /\.m3u8(\?|$)/i.test(cam.streamUrl);
+
+        if (window.Hls && Hls.isSupported() && isHls) {
+          const hls = new Hls({
+            lowLatencyMode: true,
+            enableWorker: true,
+            backBufferLength: 30
+          });
+
+          hls.loadSource(cam.streamUrl);
+          hls.attachMedia(video);
+
+          hls.on(Hls.Events.ERROR, function (event, data) {
+            if (data.fatal) {
+              mount.innerHTML = `
+                <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-950 text-center p-4">
+                  <p class="text-xs text-slate-300">Strømmen kunne ikke lastes direkte.</p>
+                  <a href="${detailUrl}" target="_blank" rel="noopener"
+                     class="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold text-xs transition">
+                    Åpne kamera ↗
+                  </a>
+                </div>
+              `;
+            }
+          });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl') && isHls) {
+          video.src = cam.streamUrl;
+        } else {
+          video.src = cam.streamUrl;
+        }
+
+        mount.appendChild(video);
+        return;
+      }
+
+      // 2) Hvis du har en iframe-vennlig side
+      if (cam.embedUrl && cam.embedUrl.trim()) {
+        mount.innerHTML = `
+          <iframe
+            src="${cam.embedUrl}"
+            class="w-full h-full border-0 bg-black"
+            loading="lazy"
+            allow="autoplay; fullscreen; picture-in-picture"
+            referrerpolicy="no-referrer"
+          ></iframe>
+          <div class="absolute bottom-2 right-2">
+            <a href="${cam.embedUrl}" target="_blank" rel="noopener"
+               class="px-3 py-1.5 rounded-lg bg-slate-950/90 border border-slate-700 text-[11px] text-slate-200 hover:text-white transition">
+              Åpne i ny fane
+            </a>
+          </div>
+        `;
+        return;
+      }
+
+      // 3) Fallback: vis Vegvesen-siden som detaljside
+      mount.innerHTML = `
+        <iframe
+          src="${detailUrl}"
+          class="w-full h-full border-0 bg-black"
+          loading="lazy"
+          allow="autoplay; fullscreen; picture-in-picture"
+          referrerpolicy="no-referrer"
+        ></iframe>
+        <div class="absolute bottom-2 right-2">
+          <a href="${detailUrl}" target="_blank" rel="noopener"
+             class="px-3 py-1.5 rounded-lg bg-slate-950/90 border border-slate-700 text-[11px] text-slate-200 hover:text-white transition">
+            Åpne i ny fane
+          </a>
+        </div>
+      `;
     }
 
     function applyFilters() {
       if (!map) return;
+
       const bounds = map.getBounds();
       const query = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
 
@@ -294,7 +441,12 @@
       const visible = CAMERAS.filter(cam => {
         const inBounds = bounds.contains([cam.lat, cam.lng]);
         const matchCat = selectedCategory === 'ALL' || cam.category === selectedCategory;
-        const matchSearch = !query || cam.name.toLowerCase().includes(query) || cam.road.toLowerCase().includes(query) || cam.municipality.toLowerCase().includes(query);
+        const matchSearch =
+          !query ||
+          cam.name.toLowerCase().includes(query) ||
+          cam.road.toLowerCase().includes(query) ||
+          cam.municipality.toLowerCase().includes(query);
+
         return inBounds && matchCat && matchSearch;
       });
 
@@ -302,6 +454,7 @@
       document.getElementById('gridCountBadge').textContent = visible.length;
 
       const grid = document.getElementById('cameraGrid');
+
       if (visible.length === 0) {
         grid.innerHTML = `
           <div class="col-span-full bg-ops-panel border border-ops-border rounded-xl p-8 text-center space-y-2">
@@ -312,54 +465,45 @@
         return;
       }
 
-      grid.innerHTML = visible.map(cam => {
-        const vegvesenUrl = `https://trafikk.vegvesen.no/?lat=${cam.lat}&lon=${cam.lng}&zoom=14`;
-        return `
-          <article class="bg-ops-card border border-ops-border hover:border-slate-600 rounded-2xl overflow-hidden shadow-lg flex flex-col transition">
-            <div class="px-3 py-2 bg-slate-900/90 border-b border-ops-border flex items-center justify-between gap-2">
-              <div class="flex items-center gap-1.5 min-w-0">
-                <span class="px-1.5 py-0.5 text-[10px] font-mono font-bold rounded bg-sky-500/20 text-sky-400 border border-sky-500/30 shrink-0">${cam.road}</span>
-                <h3 class="font-semibold text-xs text-white truncate" title="${cam.name}">${cam.name}</h3>
-              </div>
-              <span class="text-[11px] text-slate-400 shrink-0">${cam.municipality}</span>
+      grid.innerHTML = visible.map(cam => `
+        <article class="bg-ops-card border border-ops-border hover:border-slate-600 rounded-2xl overflow-hidden shadow-lg flex flex-col transition">
+          <div class="px-3 py-2 bg-slate-900/90 border-b border-ops-border flex items-center justify-between gap-2">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span class="px-1.5 py-0.5 text-[10px] font-mono font-bold rounded bg-sky-500/20 text-sky-400 border border-sky-500/30 shrink-0">${escapeHtml(cam.road)}</span>
+              <h3 class="font-semibold text-xs text-white truncate" title="${escapeHtml(cam.name)}">${escapeHtml(cam.name)}</h3>
             </div>
-            
-            <div class="p-5 bg-slate-950/80 flex flex-col items-center justify-center text-center space-y-3 aspect-video">
-              <div class="w-10 h-10 rounded-full bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 text-lg">
-                📹
-              </div>
-              <div>
-                <p class="text-xs font-semibold text-white">${cam.name}</p>
-                <p class="text-[11px] text-slate-400 mt-0.5">Operativ tilgang via Vegvesenet</p>
-              </div>
-              <a href="${vegvesenUrl}" target="_blank" rel="noopener" class="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold text-xs transition shadow-md">
-                Åpne live kamera ↗
-              </a>
-            </div>
+            <span class="text-[11px] text-slate-400 shrink-0">${escapeHtml(cam.municipality)}</span>
+          </div>
 
-            <div class="px-3 py-2 bg-slate-950/90 flex items-center justify-between gap-2 text-[11px]">
-              <span class="text-slate-400 font-mono">GPS: ${cam.lat.toFixed(3)}, ${cam.lng.toFixed(3)}</span>
-              <span class="text-emerald-400 font-mono">Online</span>
-            </div>
-          </article>
-        `;
-      }).join('');
+          <div id="player-${cam.id}" class="relative bg-black aspect-video overflow-hidden video-shell"></div>
+
+          <div class="px-3 py-2 bg-slate-950/90 flex items-center justify-between gap-2 text-[11px]">
+            <span class="text-slate-400 font-mono">GPS: ${cam.lat.toFixed(3)}, ${cam.lng.toFixed(3)}</span>
+            <span class="text-emerald-400 font-mono">Online</span>
+          </div>
+        </article>
+      `).join('');
 
       visible.forEach(cam => {
+        mountCameraPlayer(cam);
+
         const markerIcon = L.divIcon({
           html: `<div class="custom-marker w-6 h-6 bg-sky-500 border-2 border-slate-950 text-slate-950 text-[10px] font-mono font-bold">📷</div>`,
           className: '',
           iconSize: [24, 24],
           iconAnchor: [12, 12]
         });
+
         const marker = L.marker([cam.lat, cam.lng], { icon: markerIcon });
         marker.bindPopup(`
           <div class="p-2 space-y-1">
-            <span class="text-[10px] font-mono text-sky-400 font-bold">${cam.road}</span>
-            <div class="font-bold text-sm text-white">${cam.name}</div>
-            <div class="text-xs text-slate-400">${cam.municipality}</div>
+            <span class="text-[10px] font-mono text-sky-400 font-bold">${escapeHtml(cam.road)}</span>
+            <div class="font-bold text-sm text-white">${escapeHtml(cam.name)}</div>
+            <div class="text-xs text-slate-400">${escapeHtml(cam.municipality)}</div>
             <div class="pt-1">
-              <a href="https://trafikk.vegvesen.no/?lat=${cam.lat}&lon=${cam.lng}&zoom=14" target="_blank" rel="noopener" class="text-sky-400 text-xs font-semibold underline">Åpne vegkamera ↗</a>
+              <a href="${cameraDetailUrl(cam)}" target="_blank" rel="noopener" class="text-sky-400 text-xs font-semibold underline">
+                Åpne vegkamera ↗
+              </a>
             </div>
           </div>
         `);
@@ -374,7 +518,9 @@
     setInterval(() => {
       const now = new Date();
       const el = document.getElementById('liveClock');
-      if (el) el.textContent = now.toLocaleTimeString('no-NO', { hour12: false });
+      if (el) {
+        el.textContent = now.toLocaleTimeString('no-NO', { hour12: false });
+      }
     }, 1000);
 
     window.addEventListener('DOMContentLoaded', () => {

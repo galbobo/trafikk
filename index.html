@@ -77,6 +77,34 @@ main{display:flex;position:relative;min-height:0;height:100%;overflow:hidden}
 .walltools input[type=search]{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 9px;width:170px}
 .walltools select{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 8px}
 
+/* Minimerte kamera-linje */
+#minimizedBar{
+  display:none;
+  align-items:center;
+  gap:8px;
+  padding:6px 12px;
+  background:#0a1017;
+  border-bottom:1px solid var(--line);
+  font-size:12px;
+  overflow-x:auto;
+  flex-wrap:nowrap;
+}
+#minimizedBar.has-items{display:flex}
+.min-tag{
+  background:var(--panel2);
+  border:1px solid var(--line);
+  padding:3px 8px;
+  border-radius:4px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  white-space:nowrap;
+  color:var(--mut);
+  cursor:pointer;
+  transition:.15s;
+}
+.min-tag:hover{border-color:var(--acc);color:#fff}
+
 #wall{
   flex:1;
   overflow-y:auto;
@@ -88,18 +116,10 @@ main{display:flex;position:relative;min-height:0;height:100%;overflow:hidden}
 }
 
 /* Dynamisk skalering ved få kameraer */
-#wall.count-1 {
-  grid-template-columns: 1fr;
-}
-#wall.count-2 {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 550px), 1fr));
-}
-#wall.count-3 {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
-}
-#wall.count-4 {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
-}
+#wall.count-1 { grid-template-columns: 1fr; }
+#wall.count-2 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 550px), 1fr)); }
+#wall.count-3 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
+#wall.count-4 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); }
 
 .empty{grid-column:1/-1;color:var(--mut);text-align:center;padding:60px 20px}
 
@@ -147,7 +167,6 @@ main{display:flex;position:relative;min-height:0;height:100%;overflow:hidden}
 .media img.stale{opacity:.45;filter:grayscale(1)}
 .ph{color:var(--mut);text-align:center;padding:14px;font-size:12px;display:flex;flex-direction:column;gap:6px;align-items:center}
 .ph b{color:var(--txt);font-size:13px}
-.ph a{color:var(--acc)}
 .offline-tag{position:absolute;left:8px;bottom:8px;background:rgba(255,77,94,.92);color:#fff;font-size:11px;padding:2px 8px;border-radius:4px;display:none;font-weight:600}
 .media.err .offline-tag{display:block}
 
@@ -246,6 +265,14 @@ dialog menu{display:flex;gap:8px;justify-content:flex-end;padding:0;margin-top:6
       </label>
       <button class="btn" id="btnWallFs">⛶ Fullskjerm</button>
     </div>
+
+    <!-- Viser minimerte/skjulte kameraer med mulighet for å gjenopprette -->
+    <div id="minimizedBar">
+      <span style="color:var(--mut)">Minimerte kamera:</span>
+      <div id="minimizedTags" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      <button class="btn" id="btnRestoreAll" style="padding:2px 8px;font-size:11px;margin-left:auto">Vis alle</button>
+    </div>
+
     <div id="wall"></div>
   </section>
 </main>
@@ -300,7 +327,8 @@ const CONFIG = {
   MAP_ZOOM: 10,
   DEFAULT_REFRESH_SEC: 30,
   RETRY_SEC: 30,
-  STORAGE_KEY: "trafikk-kamera-v3"
+  STORAGE_KEY: "trafikk-kamera-v3",
+  HIDDEN_STORAGE_KEY: "trafikk-hidden-cams"
 };
 
 const DEFAULT_CAMERAS = [
@@ -342,6 +370,7 @@ function loadScript(src){ return new Promise((res,rej)=>{ const s=document.creat
 function loadCss(href){ const l=document.createElement("link"); l.rel="stylesheet"; l.href=href; document.head.appendChild(l); }
 
 let cams = [];
+let hiddenCams = new Set();
 const status = {};
 let filterSource = "Alle", filterText = "";
 let draggedItem = null;
@@ -351,13 +380,24 @@ function isLiveType(t){ return t === "hls" || t === "video" || t === "youtube"; 
 async function loadCams(){
   try{
     const saved = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY));
-    if (Array.isArray(saved) && saved.length > 0){ cams = saved; return; }
+    if (Array.isArray(saved) && saved.length > 0){ cams = saved; }
+    else {
+      cams = JSON.parse(JSON.stringify(DEFAULT_CAMERAS));
+      cams.sort((a,b) => (isLiveType(b.type)?1:0) - (isLiveType(a.type)?1:0));
+    }
+  }catch(e){
+    cams = JSON.parse(JSON.stringify(DEFAULT_CAMERAS));
+  }
+  try{
+    const h = JSON.parse(localStorage.getItem(CONFIG.HIDDEN_STORAGE_KEY));
+    if (Array.isArray(h)) hiddenCams = new Set(h);
   }catch(e){}
-  cams = JSON.parse(JSON.stringify(DEFAULT_CAMERAS));
-  cams.sort((a,b) => (isLiveType(b.type)?1:0) - (isLiveType(a.type)?1:0));
 }
 function saveCams(){
   try{ localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(cams)); }catch(e){}
+}
+function saveHidden(){
+  try{ localStorage.setItem(CONFIG.HIDDEN_STORAGE_KEY, JSON.stringify([...hiddenCams])); }catch(e){}
 }
 
 function resolveUrl(cam){
@@ -456,6 +496,7 @@ function buildTile(cam){
       <span class="name" title="${cam.name}">${cam.name}</span>
       <span class="badge ${isLive ? 'live' : ''}">${isLive ? 'LIVE' : cam.source}</span>
       <span class="ts"></span>
+      <button class="ib hide-btn" title="Minimer / Skjul kamera">👁️</button>
       <button class="ib loc" title="Vis i kart">⌖</button>
       <button class="ib edit" title="Rediger">✎</button>
       <button class="ib fs" title="Fullskjerm">⛶</button>
@@ -496,6 +537,7 @@ function buildTile(cam){
     }
   });
 
+  el.querySelector(".hide-btn").onclick = () => hideCamera(cam.id);
   el.querySelector(".fs").onclick = () => openViewer(cam.id);
   el.querySelector(".edit").onclick = () => openEditor(cam.id);
   el.querySelector(".loc").onclick = () => {
@@ -508,6 +550,46 @@ function buildTile(cam){
   };
   el.querySelector(".media").addEventListener("dblclick", () => openViewer(cam.id));
   return el;
+}
+
+function hideCamera(id){
+  hiddenCams.add(id);
+  saveHidden();
+  applyFilter();
+  toast("Kamera minimert (kan gjenopprettes øverst)");
+}
+
+function restoreCamera(id){
+  hiddenCams.delete(id);
+  saveHidden();
+  applyFilter();
+}
+
+$("#btnRestoreAll").onclick = () => {
+  hiddenCams.clear();
+  saveHidden();
+  applyFilter();
+};
+
+function renderMinimizedBar(){
+  const bar = $("#minimizedBar");
+  const list = $("#minimizedTags");
+  list.innerHTML = "";
+
+  const hiddenList = cams.filter(c => hiddenCams.has(c.id));
+  if (hiddenList.length === 0){
+    bar.classList.remove("has-items");
+    return;
+  }
+  bar.classList.add("has-items");
+  hiddenList.forEach(c => {
+    const tag = document.createElement("span");
+    tag.className = "min-tag";
+    tag.title = "Klikk for å hente frem igjen";
+    tag.innerHTML = `<span>＋ ${c.name}</span>`;
+    tag.onclick = () => restoreCamera(c.id);
+    list.append(tag);
+  });
 }
 
 function updateWallLayoutClass(visibleCount){
@@ -541,14 +623,21 @@ function renderWall(){
 
 function visibleCams(){
   const q = filterText.toLowerCase();
-  return cams.filter(c => (filterSource==="Alle" || c.source===filterSource) && (!q || (c.name+" "+c.source).toLowerCase().includes(q)));
+  return cams.filter(c => 
+    !hiddenCams.has(c.id) &&
+    (filterSource==="Alle" || c.source===filterSource) && 
+    (!q || (c.name+" "+c.source).toLowerCase().includes(q))
+  );
 }
+
 function applyFilter(){
   const vis = new Set(visibleCams().map(c=>c.id));
   tiles.forEach((t,id) => t.el.style.display = vis.has(id) ? "" : "none");
   updateWallLayoutClass(vis.size);
+  renderMinimizedBar();
   mapApi && mapApi.setVisible && mapApi.setVisible(vis);
 }
+
 function buildChips(){
   const box = $("#chips"); box.innerHTML = "";
   const present = ["Alle", ...SOURCES.filter(s => cams.some(c=>c.source===s))];
@@ -722,7 +811,11 @@ $("#fileImport").onchange = async e => {
   e.target.value = "";
 };
 $("#btnReset").onclick = () => {
-  if (confirm("Nullstille kameraer og rekkefølge?")){ localStorage.removeItem(CONFIG.STORAGE_KEY); location.reload(); }
+  if (confirm("Nullstille kameraer og rekkefølge?")){ 
+    localStorage.removeItem(CONFIG.STORAGE_KEY); 
+    localStorage.removeItem(CONFIG.HIDDEN_STORAGE_KEY);
+    location.reload(); 
+  }
 };
 
 /* Verktøy */

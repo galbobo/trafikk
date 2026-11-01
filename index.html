@@ -5,17 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sør-Vest Trafikk & Kameraovervåking</title>
 
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Leaflet Maps CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <!-- HLS.js for .m3u8-strømmer -->
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js"></script>
 
-  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
@@ -87,7 +81,6 @@
 </head>
 <body class="min-h-screen flex flex-col selection:bg-sky-500 selection:text-white">
 
-  <!-- TOPP-HEADER -->
   <header class="sticky top-0 z-40 bg-ops-bg/95 backdrop-blur-md border-b border-ops-border px-4 lg:px-6 py-3">
     <div class="max-w-[1920px] mx-auto flex flex-wrap items-center justify-between gap-4">
       <div class="flex items-center gap-3">
@@ -127,8 +120,6 @@
   </header>
 
   <main class="flex-1 max-w-[1920px] w-full mx-auto px-4 lg:px-6 py-4 space-y-6">
-
-    <!-- KARTSEKSJON -->
     <section class="grid grid-cols-1 lg:grid-cols-12 gap-4">
       <div class="lg:col-span-8 bg-ops-panel border border-ops-border rounded-2xl overflow-hidden flex flex-col shadow-xl">
         <div class="p-3 bg-slate-900/90 border-b border-ops-border flex flex-wrap items-center justify-between gap-2">
@@ -151,7 +142,6 @@
         </div>
       </div>
 
-      <!-- KONTROLLPANEL -->
       <div class="lg:col-span-4 bg-ops-panel border border-ops-border rounded-2xl p-4 flex flex-col justify-between gap-4 shadow-xl">
         <div class="space-y-4">
           <div class="border-b border-ops-border pb-3">
@@ -196,7 +186,6 @@
       </div>
     </section>
 
-    <!-- KAMERASEKSJON -->
     <section class="space-y-3 pb-12">
       <div class="flex items-center justify-between border-b border-ops-border pb-2.5">
         <div class="flex items-center gap-2.5">
@@ -208,29 +197,28 @@
 
       <div id="cameraGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
     </section>
-
   </main>
 
   <script>
     const CAMERAS = [
-      { id: 'c1',  name: 'E39 Lura / Forus',                    road: 'E39',     municipality: 'Sandnes',             lat: 58.8861, lng: 5.7330, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
-      { id: 'c2',  name: 'E39 Ålgård / Figgjo',                 road: 'E39',     municipality: 'Gjesdal',             lat: 58.7654, lng: 5.8542, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
-      { id: 'c3',  name: 'Fv450 Hunnedalen',                   road: 'Fv450',   municipality: 'Gjesdal / Sirdal',    lat: 58.8260, lng: 6.3950, category: 'FJELL',    streamUrl: '', embedUrl: '' },
-      { id: 'c4',  name: 'E39 Mortavika Ferjekai',              road: 'E39',     municipality: 'Stavanger',           lat: 59.1422, lng: 5.5880, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
-      { id: 'c5',  name: 'E39 Mekjarvik / Byfjordtunnelen',     road: 'E39',     municipality: 'Randaberg',           lat: 59.0221, lng: 5.6224, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
-      { id: 'c6',  name: 'Rv509 Sola / Flyplassveien',          road: 'Rv509',   municipality: 'Sola',                lat: 58.8870, lng: 5.6020, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
-      { id: 'c7',  name: 'Rv13 Ryfast / Solbakk',               road: 'Rv13',    municipality: 'Strand',              lat: 59.0185, lng: 5.9510, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
-      { id: 'c8',  name: 'E39 Bue / Vikeså',                    road: 'E39',     municipality: 'Bjerkreim',           lat: 58.6380, lng: 6.0850, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
-      { id: 'c9',  name: 'E39 Helleland',                        road: 'E39',     municipality: 'Eigersund',           lat: 58.5240, lng: 6.2350, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
-      { id: 'c10', name: 'Fv44 Jærveien / Bryne',               road: 'Fv44',    municipality: 'Time',                lat: 58.7358, lng: 5.6475, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
-      { id: 'c11', name: 'E39 Arsvågen Ferjekai',               road: 'E39',     municipality: 'Bokn',                lat: 59.1705, lng: 5.4510, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
-      { id: 'c12', name: 'E134 Aksdal Knutepunkt',              road: 'E134',    municipality: 'Tysvær',              lat: 59.4230, lng: 5.4620, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
-      { id: 'c13', name: 'Fv547 Karmsund bru',                  road: 'Fv547',   municipality: 'Haugesund / Karmøy',  lat: 59.3765, lng: 5.2950, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
-      { id: 'c14', name: 'Rv13 Bratlandsdalen',                 road: 'Rv13',    municipality: 'Suldal',              lat: 59.6220, lng: 6.7910, category: 'FJELL',    streamUrl: '', embedUrl: '' },
-      { id: 'c15', name: 'Fv520 Saudafjellet',                  road: 'Fv520',   municipality: 'Sauda',               lat: 59.6850, lng: 6.4820, category: 'FJELL',    streamUrl: '', embedUrl: '' },
-      { id: 'c16', name: 'E134 Langfossen / Rullestad',         road: 'E134',    municipality: 'Etne',                lat: 59.8450, lng: 6.3380, category: 'FJELL',    streamUrl: '', embedUrl: '' },
-      { id: 'c17', name: 'Stavanger Vågen / Byfjorden',         road: 'Bykamera',municipality: 'Stavanger',           lat: 58.9775, lng: 5.7165, category: 'ANDRE',    streamUrl: '', embedUrl: '' },
-      { id: 'c18', name: 'Sandnes havn / Vågen',                road: 'Bykamera',municipality: 'Sandnes',             lat: 58.8520, lng: 5.7350, category: 'ANDRE',    streamUrl: '', embedUrl: '' }
+      { id: 'c1',  name: 'E39 Lura / Forus',                road: 'E39',      municipality: 'Sandnes',            lat: 58.8861, lng: 5.7330, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c2',  name: 'E39 Ålgård / Figgjo',             road: 'E39',      municipality: 'Gjesdal',            lat: 58.7654, lng: 5.8542, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c3',  name: 'Fv450 Hunnedalen',                road: 'Fv450',    municipality: 'Gjesdal / Sirdal',   lat: 58.8260, lng: 6.3950, category: 'FJELL',    streamUrl: '', embedUrl: '' },
+      { id: 'c4',  name: 'E39 Mortavika Ferjekai',          road: 'E39',      municipality: 'Stavanger',          lat: 59.1422, lng: 5.5880, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c5',  name: 'E39 Mekjarvik / Byfjordtunnelen', road: 'E39',      municipality: 'Randaberg',          lat: 59.0221, lng: 5.6224, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c6',  name: 'Rv509 Sola / Flyplassveien',      road: 'Rv509',    municipality: 'Sola',               lat: 58.8870, lng: 5.6020, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c7',  name: 'Rv13 Ryfast / Solbakk',           road: 'Rv13',     municipality: 'Strand',             lat: 59.0185, lng: 5.9510, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c8',  name: 'E39 Bue / Vikeså',                road: 'E39',      municipality: 'Bjerkreim',          lat: 58.6380, lng: 6.0850, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c9',  name: 'E39 Helleland',                   road: 'E39',      municipality: 'Eigersund',          lat: 58.5240, lng: 6.2350, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c10', name: 'Fv44 Jærveien / Bryne',           road: 'Fv44',     municipality: 'Time',               lat: 58.7358, lng: 5.6475, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c11', name: 'E39 Arsvågen Ferjekai',           road: 'E39',      municipality: 'Bokn',               lat: 59.1705, lng: 5.4510, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c12', name: 'E134 Aksdal Knutepunkt',          road: 'E134',     municipality: 'Tysvær',             lat: 59.4230, lng: 5.4620, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c13', name: 'Fv547 Karmsund bru',              road: 'Fv547',    municipality: 'Haugesund / Karmøy', lat: 59.3765, lng: 5.2950, category: 'HOVEDVEI', streamUrl: '', embedUrl: '' },
+      { id: 'c14', name: 'Rv13 Bratlandsdalen',             road: 'Rv13',     municipality: 'Suldal',             lat: 59.6220, lng: 6.7910, category: 'FJELL',    streamUrl: '', embedUrl: '' },
+      { id: 'c15', name: 'Fv520 Saudafjellet',              road: 'Fv520',    municipality: 'Sauda',              lat: 59.6850, lng: 6.4820, category: 'FJELL',    streamUrl: '', embedUrl: '' },
+      { id: 'c16', name: 'E134 Langfossen / Rullestad',     road: 'E134',     municipality: 'Etne',               lat: 59.8450, lng: 6.3380, category: 'FJELL',    streamUrl: '', embedUrl: '' },
+      { id: 'c17', name: 'Stavanger Vågen / Byfjorden',     road: 'Bykamera', municipality: 'Stavanger',          lat: 58.9775, lng: 5.7165, category: 'ANDRE',    streamUrl: '', embedUrl: '' },
+      { id: 'c18', name: 'Sandnes havn / Vågen',            road: 'Bykamera', municipality: 'Sandnes',            lat: 58.8520, lng: 5.7350, category: 'ANDRE',    streamUrl: '', embedUrl: '' }
     ];
 
     let map = null;
@@ -284,17 +272,11 @@
       if (baseLayer) map.removeLayer(baseLayer);
 
       if (type === 'streets') {
-        baseLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-          maxZoom: 20
-        }).addTo(map);
-
+        baseLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map);
         document.getElementById('btnLayerStreets').className = 'px-2.5 py-1 rounded text-xs bg-sky-500 text-slate-950 font-semibold transition';
         document.getElementById('btnLayerSat').className = 'px-2.5 py-1 rounded text-xs bg-slate-800 text-slate-300 hover:bg-slate-700 transition';
       } else {
-        baseLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
-          maxZoom: 20
-        }).addTo(map);
-
+        baseLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map);
         document.getElementById('btnLayerSat').className = 'px-2.5 py-1 rounded text-xs bg-sky-500 text-slate-950 font-semibold transition';
         document.getElementById('btnLayerStreets').className = 'px-2.5 py-1 rounded text-xs bg-slate-800 text-slate-300 hover:bg-slate-700 transition';
       }
@@ -311,7 +293,6 @@
         jæren:     { center: [58.63, 5.90], zoom: 10 },
         sirdal:    { center: [58.83, 6.42], zoom: 10 }
       };
-
       const t = targets[region] || targets.all;
       map.flyTo(t.center, t.zoom, { duration: 0.7 });
     }
@@ -325,18 +306,15 @@
 
     function setCategory(cat) {
       selectedCategory = cat;
-
       ['ALL', 'HOVEDVEI', 'FJELL', 'ANDRE'].forEach(c => {
         const btn = document.getElementById('cat_' + c);
         if (!btn) return;
-
         if (c === cat) {
           btn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold bg-sky-500 text-slate-950 transition';
         } else {
           btn.className = 'px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition';
         }
       });
-
       applyFilters();
     }
 
@@ -347,7 +325,6 @@
       const detailUrl = cameraDetailUrl(cam);
       mount.innerHTML = '';
 
-      // 1) Direkte strøm hvis du har en ekte HLS/MP4-lenke
       if (cam.streamUrl && cam.streamUrl.trim()) {
         const video = document.createElement('video');
         video.className = 'w-full h-full object-cover bg-black';
@@ -392,7 +369,6 @@
         return;
       }
 
-      // 2) Hvis du har en iframe-vennlig side
       if (cam.embedUrl && cam.embedUrl.trim()) {
         mount.innerHTML = `
           <iframe
@@ -412,7 +388,6 @@
         return;
       }
 
-      // 3) Fallback: vis Vegvesen-siden som detaljside
       mount.innerHTML = `
         <iframe
           src="${detailUrl}"
@@ -518,9 +493,7 @@
     setInterval(() => {
       const now = new Date();
       const el = document.getElementById('liveClock');
-      if (el) {
-        el.textContent = now.toLocaleTimeString('no-NO', { hour12: false });
-      }
+      if (el) el.textContent = now.toLocaleTimeString('no-NO', { hour12: false });
     }, 1000);
 
     window.addEventListener('DOMContentLoaded', () => {

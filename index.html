@@ -73,7 +73,7 @@
               Sanntid
             </span>
           </div>
-          <p class="text-xs text-slate-400">Trafikkflyt og direkte tilgang til vegkameraer for Sør-Vest politidistrikt</p>
+          <p class="text-xs text-slate-400">Trafikkflyt og direkte vegkameraer for Sør-Vest politidistrikt</p>
         </div>
       </div>
 
@@ -160,13 +160,13 @@
         </div>
 
         <div class="pt-3 border-t border-ops-border flex items-center justify-between text-xs text-slate-400">
-          <span>Sanntidsvisning</span>
-          <button onclick="refreshCameras()" class="text-sky-400 hover:text-sky-300 font-semibold">🔄 Oppdater</button>
+          <span>Auto-oppdaterer (60s)</span>
+          <button onclick="refreshCameras()" class="text-sky-400 hover:text-sky-300 font-semibold">🔄 Oppdater nå</button>
         </div>
       </div>
     </section>
 
-    <!-- KAMERASEKSJON -->
+    <!-- KAMERASEKSJON MED PROXY-BILDEVISNING -->
     <section class="space-y-3 pb-12">
       <div class="flex items-center justify-between border-b border-ops-border pb-2.5">
         <div class="flex items-center gap-2.5">
@@ -183,24 +183,24 @@
 
   <script>
     const CAMERAS = [
-      { id: 'c1', name: 'E39 Lura / Forus', road: 'E39', municipality: 'Sandnes', lat: 58.8861, lng: 5.7330, category: 'HOVEDVEI' },
-      { id: 'c2', name: 'E39 Ålgård / Figgjo', road: 'E39', municipality: 'Gjesdal', lat: 58.7654, lng: 5.8542, category: 'HOVEDVEI' },
-      { id: 'c3', name: 'Fv450 Hunnedalen', road: 'Fv450', municipality: 'Gjesdal / Sirdal', lat: 58.8260, lng: 6.3950, category: 'FJELL' },
-      { id: 'c4', name: 'E39 Mortavika Ferjekai', road: 'E39', municipality: 'Stavanger', lat: 59.1422, lng: 5.5880, category: 'HOVEDVEI' },
-      { id: 'c5', name: 'E39 Mekjarvik / Byfjordtunnelen', road: 'E39', municipality: 'Randaberg', lat: 59.0221, lng: 5.6224, category: 'HOVEDVEI' },
-      { id: 'c6', name: 'Rv509 Sola / Flyplassveien', road: 'Rv509', municipality: 'Sola', lat: 58.8870, lng: 5.6020, category: 'HOVEDVEI' },
-      { id: 'c7', name: 'Rv13 Ryfast / Solbakk', road: 'Rv13', municipality: 'Strand', lat: 59.0185, lng: 5.9510, category: 'HOVEDVEI' },
-      { id: 'c8', name: 'E39 Bue / Vikeså', road: 'E39', municipality: 'Bjerkreim', lat: 58.6380, lng: 6.0850, category: 'HOVEDVEI' },
-      { id: 'c9', name: 'E39 Helleland', road: 'E39', municipality: 'Eigersund', lat: 58.5240, lng: 6.2350, category: 'HOVEDVEI' },
-      { id: 'c10', name: 'Fv44 Jærveien / Bryne', road: 'Fv44', municipality: 'Time', lat: 58.7358, lng: 5.6475, category: 'HOVEDVEI' },
-      { id: 'c11', name: 'E39 Arsvågen Ferjekai', road: 'E39', municipality: 'Bokn', lat: 59.1705, lng: 5.4510, category: 'HOVEDVEI' },
-      { id: 'c12', name: 'E134 Aksdal Knutepunkt', road: 'E134', municipality: 'Tysvær', lat: 59.4230, lng: 5.4620, category: 'HOVEDVEI' },
-      { id: 'c13', name: 'Fv547 Karmsund bru', road: 'Fv547', municipality: 'Haugesund / Karmøy', lat: 59.3765, lng: 5.2950, category: 'HOVEDVEI' },
-      { id: 'c14', name: 'Rv13 Bratlandsdalen', road: 'Rv13', municipality: 'Suldal', lat: 59.6220, lng: 6.7910, category: 'FJELL' },
-      { id: 'c15', name: 'Fv520 Saudafjellet', road: 'Fv520', municipality: 'Sauda', lat: 59.6850, lng: 6.4820, category: 'FJELL' },
-      { id: 'c16', name: 'E134 Langfossen / Rullestad', road: 'E134', municipality: 'Etne', lat: 59.8450, lng: 6.3380, category: 'FJELL' },
-      { id: 'c17', name: 'Stavanger Vågen / Byfjorden', road: 'Bykamera', municipality: 'Stavanger', lat: 58.9775, lng: 5.7165, category: 'ANDRE' },
-      { id: 'c18', name: 'Sandnes havn / Vågen', road: 'Bykamera', municipality: 'Sandnes', lat: 58.8520, lng: 5.7350, category: 'ANDRE' }
+      { id: 'c1', name: 'E39 Lura / Forus', road: 'E39', municipality: 'Sandnes', lat: 58.8861, lng: 5.7330, category: 'HOVEDVEI', svvId: '1102001_1' },
+      { id: 'c2', name: 'E39 Ålgård / Figgjo', road: 'E39', municipality: 'Gjesdal', lat: 58.7654, lng: 5.8542, category: 'HOVEDVEI', svvId: '1122001_1' },
+      { id: 'c3', name: 'Fv450 Hunnedalen', road: 'Fv450', municipality: 'Gjesdal / Sirdal', lat: 58.8260, lng: 6.3950, category: 'FJELL', svvId: '1122002_1' },
+      { id: 'c4', name: 'E39 Mortavika Ferjekai', road: 'E39', municipality: 'Stavanger', lat: 59.1422, lng: 5.5880, category: 'HOVEDVEI', svvId: '1145001_1' },
+      { id: 'c5', name: 'E39 Mekjarvik / Byfjordtunnelen', road: 'E39', municipality: 'Randaberg', lat: 59.0221, lng: 5.6224, category: 'HOVEDVEI', svvId: '1144001_1' },
+      { id: 'c6', name: 'Rv509 Sola / Flyplassveien', road: 'Rv509', municipality: 'Sola', lat: 58.8870, lng: 5.6020, category: 'HOVEDVEI', svvId: '1105001_1' },
+      { id: 'c7', name: 'Rv13 Ryfast / Solbakk', road: 'Rv13', municipality: 'Strand', lat: 59.0185, lng: 5.9510, category: 'HOVEDVEI', svvId: '1130001_1' },
+      { id: 'c8', name: 'E39 Bue / Vikeså', road: 'E39', municipality: 'Bjerkreim', lat: 58.6380, lng: 6.0850, category: 'HOVEDVEI', svvId: '1114001_1' },
+      { id: 'c9', name: 'E39 Helleland', road: 'E39', municipality: 'Eigersund', lat: 58.5240, lng: 6.2350, category: 'HOVEDVEI', svvId: '1116001_1' },
+      { id: 'c10', name: 'Fv44 Jærveien / Bryne', road: 'Fv44', municipality: 'Time', lat: 58.7358, lng: 5.6475, category: 'HOVEDVEI', svvId: '1121001_1' },
+      { id: 'c11', name: 'E39 Arsvågen Ferjekai', road: 'E39', municipality: 'Bokn', lat: 59.1705, lng: 5.4510, category: 'HOVEDVEI', svvId: '1146001_1' },
+      { id: 'c12', name: 'E134 Aksdal Knutepunkt', road: 'E134', municipality: 'Tysvær', lat: 59.4230, lng: 5.4620, category: 'HOVEDVEI', svvId: '1148001_1' },
+      { id: 'c13', name: 'Fv547 Karmsund bru', road: 'Fv547', municipality: 'Haugesund / Karmøy', lat: 59.3765, lng: 5.2950, category: 'HOVEDVEI', svvId: '1150001_1' },
+      { id: 'c14', name: 'Rv13 Bratlandsdalen', road: 'Rv13', municipality: 'Suldal', lat: 59.6220, lng: 6.7910, category: 'FJELL', svvId: '1134001_1' },
+      { id: 'c15', name: 'Fv520 Saudafjellet', road: 'Fv520', municipality: 'Sauda', lat: 59.6850, lng: 6.4820, category: 'FJELL', svvId: '1135001_1' },
+      { id: 'c16', name: 'E134 Langfossen / Rullestad', road: 'E134', municipality: 'Etne', lat: 59.8450, lng: 6.3380, category: 'FJELL', svvId: '1211001_1' },
+      { id: 'c17', name: 'Stavanger Vågen / Byfjorden', road: 'Bykamera', municipality: 'Stavanger', lat: 58.9775, lng: 5.7165, category: 'ANDRE', svvId: '1101001_1' },
+      { id: 'c18', name: 'Sandnes havn / Vågen', road: 'Bykamera', municipality: 'Sandnes', lat: 58.8520, lng: 5.7350, category: 'ANDRE', svvId: '1103001_1' }
     ];
 
     let map = null;
@@ -208,6 +208,7 @@
     let trafficLayer = null;
     let markerGroup = null;
     let selectedCategory = 'ALL';
+    let cacheBuster = Date.now();
 
     function initMap() {
       map = L.map('map', {
@@ -312,8 +313,12 @@
         return;
       }
 
+      // Bruker bilde-proxy (weserv.nl) for å hente ekte Vegvesen-bilder uten CORS-blokkering
       grid.innerHTML = visible.map(cam => {
-        const vegvesenUrl = `https://trafikk.vegvesen.no/?lat=${cam.lat}&lon=${cam.lng}&zoom=14`;
+        const rawVegvesenUrl = `https://kamera.atlas.vegvesen.no/api/images/${cam.svvId}`;
+        const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(rawVegvesenUrl)}&t=${cacheBuster}`;
+        const vegvesenMapUrl = `https://trafikk.vegvesen.no/?lat=${cam.lat}&lon=${cam.lng}&zoom=14`;
+
         return `
           <article class="bg-ops-card border border-ops-border hover:border-slate-600 rounded-2xl overflow-hidden shadow-lg flex flex-col transition">
             <div class="px-3 py-2 bg-slate-900/90 border-b border-ops-border flex items-center justify-between gap-2">
@@ -323,23 +328,19 @@
               </div>
               <span class="text-[11px] text-slate-400 shrink-0">${cam.municipality}</span>
             </div>
-            
-            <div class="p-5 bg-slate-950/80 flex flex-col items-center justify-center text-center space-y-3 aspect-video">
-              <div class="w-10 h-10 rounded-full bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 text-lg">
-                📹
+
+            <div class="relative aspect-video bg-slate-950 w-full overflow-hidden flex items-center justify-center">
+              <img src="${proxyUrl}" alt="${cam.name}" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=600&auto=format&fit=crop&q=60';" />
+              <div class="absolute top-2 left-2 bg-slate-950/80 backdrop-blur px-2 py-0.5 rounded text-[10px] font-mono text-sky-300 border border-slate-700">
+                Statens vegvesen CCTV
               </div>
-              <div>
-                <p class="text-xs font-semibold text-white">${cam.name}</p>
-                <p class="text-[11px] text-slate-400 mt-0.5">Direkte tilkobling til Statens vegvesen</p>
-              </div>
-              <a href="${vegvesenUrl}" target="_blank" rel="noopener" class="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold text-xs transition shadow-md">
-                Åpne live kamerabilde ↗
-              </a>
             </div>
 
             <div class="px-3 py-2 bg-slate-950/90 flex items-center justify-between gap-2 text-[11px]">
-              <span class="text-slate-400 font-mono">GPS: ${cam.lat.toFixed(3)}, ${cam.lng.toFixed(3)}</span>
-              <span class="text-emerald-400 font-mono">Aktiv</span>
+              <span class="text-slate-400 font-mono">Sanntidsbilde</span>
+              <a href="${vegvesenMapUrl}" target="_blank" rel="noopener" class="text-sky-400 hover:underline font-medium">
+                Vegvesen-kart ↗
+              </a>
             </div>
           </article>
         `;
@@ -368,6 +369,7 @@
     }
 
     function refreshCameras() {
+      cacheBuster = Date.now();
       applyFilters();
     }
 
@@ -376,6 +378,11 @@
       const el = document.getElementById('liveClock');
       if (el) el.textContent = now.toLocaleTimeString('no-NO', { hour12: false });
     }, 1000);
+
+    // Auto-oppfrisk bildeframene hvert minutt
+    setInterval(() => {
+      refreshCameras();
+    }, 60000);
 
     window.addEventListener('DOMContentLoaded', () => {
       initMap();

@@ -119,6 +119,18 @@ main{display:flex;position:relative;min-height:0;height:100%;overflow:hidden}
   padding: 12px;
 }
 
+/* Fullskjerm: rutene fyller hele skjermen */
+#wall.fs{
+  overflow:hidden;
+  grid-template-columns: repeat(var(--cols,1), minmax(0,1fr)) !important;
+  grid-template-rows: repeat(var(--rows,1), minmax(0,1fr));
+  align-content:stretch;
+  gap:8px;
+  padding:8px;
+}
+#wall.fs .tile{height:100%;min-height:0}
+#wall.fs .media{aspect-ratio:auto;flex:1;min-height:0;height:auto}
+
 /* Dynamisk skalering ved få kameraer */
 #wall.count-1 { grid-template-columns: 1fr; }
 #wall.count-2 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 550px), 1fr)); }
@@ -664,6 +676,7 @@ function applyFilter(){
   updateWallLayoutClass(vis.size);
   renderMinimizedBar();
   mapApi && mapApi.setVisible && mapApi.setVisible(vis);
+  layoutFs();
 }
 
 function buildChips(){
@@ -852,6 +865,33 @@ $("#size").onchange = e => {
   document.documentElement.style.setProperty("--tile-min", e.target.value);
   applyFilter();
 };
+
+/* Auto-tilpasning av ruter i fullskjerm */
+function layoutFs(){
+  if (document.fullscreenElement !== wall){ wall.classList.remove("fs"); return; }
+  wall.classList.add("fs");
+  const n = [...tiles.values()].filter(t => t.el.style.display !== "none").length;
+  if (!n) return;
+  const cs = getComputedStyle(wall);
+  const gap = parseFloat(cs.columnGap) || 8;
+  const W = wall.clientWidth  - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const H = wall.clientHeight - parseFloat(cs.paddingTop)  - parseFloat(cs.paddingBottom);
+  const HEADER = 35;            // høyde på flis-header
+  let best = {cols:1, score:Infinity};
+  for (let cols = 1; cols <= n; cols++){
+    const rows = Math.ceil(n / cols);
+    const cw = (W - gap*(cols-1)) / cols;
+    const ch = (H - gap*(rows-1)) / rows - HEADER;
+    if (cw <= 0 || ch <= 0) continue;
+    // Velg oppsettet der bildeformatet ligger nærmest 16:9 (minst beskjæring)
+    const score = Math.abs(Math.log((cw/ch) / (16/9)));
+    if (score < best.score) best = { cols, score };
+  }
+  wall.style.setProperty("--cols", best.cols);
+  wall.style.setProperty("--rows", Math.ceil(n / best.cols));
+}
+document.addEventListener("fullscreenchange", () => requestAnimationFrame(layoutFs));
+window.addEventListener("resize", layoutFs);
 
 /* Fullskjerm kun for veggen (#wall), skjuler menyer */
 $("#btnWallFs").onclick = () => {

@@ -119,17 +119,45 @@ main{display:flex;position:relative;min-height:0;height:100%;overflow:hidden}
   padding: 12px;
 }
 
-/* Fullskjerm: rutene fyller hele skjermen */
+/* Sømløs Fullskjerm: rutene fyller flaten uten kanter */
 #wall.fs{
   overflow:hidden;
   grid-template-columns: repeat(var(--cols,1), minmax(0,1fr)) !important;
   grid-template-rows: repeat(var(--rows,1), minmax(0,1fr));
   align-content:stretch;
-  gap:8px;
-  padding:8px;
+  gap:1px;
+  padding:0;
+  background:#000;
 }
-#wall.fs .tile{height:100%;min-height:0}
-#wall.fs .media{aspect-ratio:auto;flex:1;min-height:0;height:auto}
+#wall.fs .tile{
+  height:100%;
+  min-height:0;
+  border:0;
+  border-radius:0;
+  background:#000;
+  position:relative;
+}
+#wall.fs .tile header{
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  z-index:5;
+  background:linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%);
+  border-bottom:0;
+  opacity:0;
+  transition:opacity 0.2s ease;
+}
+#wall.fs .tile:hover header{
+  opacity:1;
+}
+#wall.fs .media{
+  aspect-ratio:auto;
+  flex:1;
+  min-height:0;
+  height:100%;
+  border-radius:0;
+}
 
 /* Dynamisk skalering ved få kameraer */
 #wall.count-1 { grid-template-columns: 1fr; }
@@ -347,13 +375,9 @@ const CONFIG = {
   HIDDEN_STORAGE_KEY: "trafikk-hidden-cams"
 };
 
-/* Standard kameraliste */
-/* Standard kameraliste */
 /* Komplett kameraliste for Sør-Vest politidistrikt */
 const DEFAULT_CAMERAS = [
-  // ==========================================
-  // SØR FOR BOKNAFJORDEN: BYOMRÅDE & MOTORVEI
-  // ==========================================
+  // Sør for Boknafjorden: Sentrale byområder & motorvei
   {"id":"cam-01","name":"Fv509 – Kannik (vest)","source":"Aftenbladet","type":"hls","url":"https://svplive-lh.akamaized.net/hls/live/2039442/sa/Y8fGeD62y0DUM6JCpgm6P/master.m3u8","lat":58.966,"lng":5.725,"refresh":60},
   {"id":"cam-02","name":"Fv509 – Kannik (øst)","source":"Aftenbladet","type":"hls","url":"https://svplive-lh.akamaized.net/hls/live/msl5/20001089/sa_D2azfzV6IxSnseFDLooBu/source.m3u8","lat":58.967,"lng":5.728,"refresh":60},
   {"id":"cam-03","name":"Fv509 – Tjensvollkrysset","source":"Aftenbladet","type":"hls","url":"https://svplive-lh.akamaized.net/hls/live/2039446/sa/v9xFTOrfTvxvdp9AqwVSv/master.m3u8","lat":58.952,"lng":5.712,"refresh":60},
@@ -373,9 +397,7 @@ const DEFAULT_CAMERAS = [
   {"id":"cam-17","name":"Sandnes – Vågen","source":"Aftenbladet","type":"hls","url":"https://svplive-lh.akamaized.net/hls/live/msl5/20001089/sa_LIpi0Yh9hizlUH4ddVbYO/master.m3u8","lat":58.8517,"lng":5.733,"refresh":60},
   {"id":"cam-18","name":"Stavanger – Oljemuseet","source":"Aftenbladet","type":"hls","url":"https://svplive-lh.akamaized.net/hls/live/msl5/20001089/sa_DoIUz1MAI79XozrylNad2/master.m3u8","lat":58.9707,"lng":5.731,"refresh":60},
 
-  // ==========================================
-  // SØR FOR BOKNAFJORDEN: SANDNES SØR / JÆREN / DALANE
-  // ==========================================
+  // Sør for Boknafjorden: Sandnes sør / Jæren / Dalane
   {"id":"cam-19","name":"E39 – Bråstein – mot Stavanger","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129011_1/hls_1_stream_1_orig.m3u8","lat":58.8236,"lng":5.7871,"refresh":60},
   {"id":"cam-20","name":"E39 – Bråstein – mot Ålgård","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129011_2/hls_1_stream_1_orig.m3u8","lat":58.8234,"lng":5.7874,"refresh":60},
   {"id":"cam-21","name":"E39 – Skurve / Ålgård","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129009_1","lat":58.7490,"lng":5.8890,"refresh":30},
@@ -384,35 +406,27 @@ const DEFAULT_CAMERAS = [
   {"id":"cam-24","name":"E39 – Ualand","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129005_1","lat":58.4550,"lng":6.3470,"refresh":30},
   {"id":"cam-25","name":"Fv44 – Varhaug (Jæren)","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129045_1","lat":58.6180,"lng":5.6540,"refresh":30},
 
-  // ==========================================
-  // FERJESAMBANDET OVER BOKNAFJORDEN
-  // ==========================================
+  // Ferjesambandet over Boknafjorden
   {"id":"cam-26","name":"E39 – Rennesøy","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129018_1","lat":59.090,"lng":5.700,"refresh":30},
   {"id":"cam-27","name":"E39 – Mortavika ferjekai (sør)","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129036_1/manifest.m3u8","lat":59.1392,"lng":5.5898,"refresh":60},
   {"id":"cam-28","name":"E39 – Arsvågen ferjekai (nord)","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129037_2/manifest.m3u8","lat":59.250,"lng":5.480,"refresh":60},
 
-  // ==========================================
-  // NORD FOR BOKNAFJORDEN: KARMØY & HAUGESUND
-  // ==========================================
+  // Nord for Boknafjorden: Karmøy & Haugesund
   {"id":"cam-29","name":"Haugesund – Smedasundet","source":"Jatec","type":"image","url":"https://www.jatec.no/wp-content/uploads/Smedasundet/Smedasundet000M.jpg","lat":59.4105,"lng":5.2685,"refresh":60},
   {"id":"cam-30","name":"Fv47 – Karmsund bru (vest/Fastland)","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129051_1","lat":59.3800,"lng":5.2950,"refresh":30},
   {"id":"cam-31","name":"Fv47 – Husabøkrossen (Karmøy)","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129053_1","lat":59.2780,"lng":5.2750,"refresh":30},
   {"id":"cam-32","name":"E134 – Raglamyr / Haugesund øst","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129052_1","lat":59.4080,"lng":5.3210,"refresh":30},
   {"id":"cam-33","name":"E39/E134 – Aksdal krysset","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129048_1","lat":59.3700,"lng":5.4450,"refresh":30},
 
-  // ==========================================
-  // NORD FOR BOKNAFJORDEN: INDRE STRØK & FJELLOVERGANGER
-  // ==========================================
+  // Nord for Boknafjorden: Indre strøk & fjelloverganger
   {"id":"cam-34","name":"E134 – Knapphus (Vindafjord)","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129049_1","lat":59.4880,"lng":5.7820,"refresh":30},
   {"id":"cam-35","name":"E134 – Seljestadjuvet (mot Røldal)","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1229001_1","lat":59.8970,"lng":6.6340,"refresh":30},
   {"id":"cam-36","name":"Rv13 – Håra (Røldal krysset)","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1229002_1","lat":59.8250,"lng":6.7680,"refresh":30},
   {"id":"cam-37","name":"Rv13 – Vikedalsosen (Ryfylke)","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129042_1","lat":59.5010,"lng":5.9030,"refresh":30}
 ];
 
-// De spesifikke kamera-ID-ene som skal være aktive som standard:
-// Kameraer som vises som standard på veggen:
+// Kamera-ID-er som er aktive som standard på veggen
 const DEFAULT_ACTIVE_IDS = new Set([
-  // Sentralaksen sør
   "cam-01", // Fv509 Kannik (vest)
   "cam-02", // Fv509 Kannik (øst)
   "cam-03", // Fv509 Tjensvollkrysset
@@ -421,12 +435,8 @@ const DEFAULT_ACTIVE_IDS = new Set([
   "cam-11", // Rv509 Sømmevågen 1
   "cam-16", // Sandnes Hanafjellet
   "cam-19", // E39 Bråstein (mot Stavanger)
-  
-  // Boknafjorden
   "cam-27", // E39 Mortavika ferjekai
   "cam-28", // E39 Arsvågen ferjekai
-  
-  // Nord for fjorden
   "cam-29", // Haugesund Smedasundet
   "cam-33"  // E39/E134 Aksdal
 ]);
@@ -468,7 +478,6 @@ async function loadCams(){
     cams = JSON.parse(JSON.stringify(DEFAULT_CAMERAS));
   }
 
-  // Last inn skjulte kameraer fra lagring, eller sett standard hvis det er første gang
   const savedHidden = localStorage.getItem(CONFIG.HIDDEN_STORAGE_KEY);
   if (savedHidden !== null){
     try{
@@ -476,7 +485,6 @@ async function loadCams(){
       if (Array.isArray(h)) hiddenCams = new Set(h);
     }catch(e){}
   } else {
-    // Kun de 10 definerte kameraene er aktive, resten skjules:
     hiddenCams = new Set(cams.filter(c => !DEFAULT_ACTIVE_IDS.has(c.id)).map(c => c.id));
     saveHidden();
   }
@@ -504,47 +512,109 @@ function resolveUrl(cam){
 let hlsLoading = null;
 function ensureHls(){ return hlsLoading || (hlsLoading = loadScript("https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.17/hls.min.js")); }
 
+// Skjul feilende kamera automatisk
+function autoHideOnError(camId) {
+  if (!hiddenCams.has(camId)) {
+    hiddenCams.add(camId);
+    saveHidden();
+    applyFilter();
+    toast("Kamera uten signal ble lagt i minimert-linjen");
+  }
+}
+
 function mountMedia(cam, host, onStatus){
   const url = resolveUrl(cam);
   const timers = []; let hls = null, dead = false;
-  const destroy = () => { dead = true; timers.forEach(clearInterval); timers.length=0; if (hls){ try{hls.destroy();}catch(e){} hls=null; } host.innerHTML=""; host.classList.remove("err"); };
+  
+  const destroy = () => { 
+    dead = true; 
+    timers.forEach(clearInterval); 
+    timers.length = 0; 
+    if (hls){ try{ hls.destroy(); }catch(e){} hls = null; } 
+    host.innerHTML = ""; 
+    host.classList.remove("err"); 
+  };
+  
   host.innerHTML = ""; host.classList.remove("err");
-  if (!url){ onStatus("unconfigured"); return { destroy }; }
+  if (!url){ 
+    onStatus("unconfigured"); 
+    autoHideOnError(cam.id);
+    return { destroy }; 
+  }
 
-  const ok = () => { if(dead) return; host.classList.remove("err"); onStatus("ok", new Date()); };
-  const bad = () => { if(dead) return; host.classList.add("err"); onStatus("error"); };
-  const tag = () => { const t=document.createElement("div"); t.className="offline-tag"; t.textContent="Ingen signal"; host.append(t); };
+  const ok = () => { 
+    if(dead) return; 
+    host.classList.remove("err"); 
+    onStatus("ok", new Date()); 
+  };
+  
+  const bad = () => { 
+    if(dead) return; 
+    host.classList.add("err"); 
+    onStatus("error"); 
+    autoHideOnError(cam.id);
+  };
+  
+  const tag = () => { 
+    const t = document.createElement("div"); 
+    t.className = "offline-tag"; 
+    t.textContent = "Ingen signal"; 
+    host.append(t); 
+  };
+
   onStatus("pending");
+
+  // Timeout på 10 sekunder hvis strømmen aldri svarer
+  const timeoutTimer = setTimeout(() => {
+    if (status[cam.id]?.s !== "ok") {
+      bad();
+    }
+  }, 10000);
+  timers.push(timeoutTimer);
 
   if (cam.type === "image"){
     const img = document.createElement("img"); img.alt = cam.name; host.append(img); tag();
     const tick = () => {
       const l = new Image(); const u = url + (url.includes("?")?"&":"?") + "_t=" + Date.now();
-      l.onload = () => { if(dead) return; img.src = u; img.classList.remove("stale"); ok(); };
+      l.onload = () => { if(dead) return; clearTimeout(timeoutTimer); img.src = u; img.classList.remove("stale"); ok(); };
       l.onerror = () => { if(dead) return; img.classList.add("stale"); bad(); };
       l.src = u;
     };
-    tick(); timers.push(setInterval(tick, Math.max(5, cam.refresh || CONFIG.DEFAULT_REFRESH_SEC) * 1000));
+    tick(); 
+    timers.push(setInterval(tick, Math.max(5, cam.refresh || CONFIG.DEFAULT_REFRESH_SEC) * 1000));
   } else if (cam.type === "hls" || cam.type === "video"){
     const v = document.createElement("video");
     v.muted = true; v.autoplay = true; v.loop = true; v.playsInline = true;
     v.setAttribute("muted",""); v.setAttribute("playsinline","");
-    v.addEventListener("playing", ok); v.addEventListener("error", bad);
+    
+    v.addEventListener("playing", () => { clearTimeout(timeoutTimer); ok(); }); 
+    v.addEventListener("error", bad);
     host.append(v); tag();
-    if (cam.type==="hls" && !v.canPlayType("application/vnd.apple.mpegurl")){
+
+    if (cam.type === "hls" && !v.canPlayType("application/vnd.apple.mpegurl")){
       ensureHls().then(() => {
         if (dead) return;
         if (!window.Hls || !Hls.isSupported()) return bad();
-        hls = new Hls({ lowLatencyMode:true });
-        hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) bad(); });
-        hls.loadSource(url); hls.attachMedia(v);
+        hls = new Hls({ lowLatencyMode: true, manifestLoadingTimeOut: 8000 });
+        hls.on(Hls.Events.ERROR, (_, d) => { 
+          if (d.fatal) {
+            bad();
+          } 
+        });
+        hls.loadSource(url); 
+        hls.attachMedia(v);
         v.play().catch(()=>{});
       }).catch(bad);
-    } else { v.src = url; v.play().catch(()=>{}); }
+    } else { 
+      v.src = url; 
+      v.play().catch(()=>{}); 
+    }
   } else {
     const f = document.createElement("iframe");
     f.allow = "autoplay; encrypted-media"; f.src = url;
-    f.onload = ok; f.onerror = bad; host.append(f); tag();
+    f.onload = () => { clearTimeout(timeoutTimer); ok(); }; 
+    f.onerror = bad; 
+    host.append(f); tag();
   }
   return { destroy };
 }
@@ -568,7 +638,10 @@ function startTile(cam){
   tl.mount && tl.mount.destroy(); clearTimeout(tl.retry);
   tl.mount = mountMedia(cam, tl.el.querySelector(".media"), (s,t) => {
     setStatus(cam.id, s, t);
-    if (s==="error" && cam.type!=="image"){ clearTimeout(tl.retry); tl.retry = setTimeout(()=>startTile(cam), CONFIG.RETRY_SEC*1000); }
+    if (s==="error" && cam.type!=="image"){ 
+      clearTimeout(tl.retry); 
+      tl.retry = setTimeout(()=>startTile(cam), CONFIG.RETRY_SEC*1000); 
+    }
   });
 }
 
@@ -915,24 +988,24 @@ $("#size").onchange = e => {
   applyFilter();
 };
 
-/* Auto-tilpasning av ruter i fullskjerm */
+/* Sømløs auto-tilpasning i fullskjerm uten border-fratrekk */
 function layoutFs(){
   if (document.fullscreenElement !== wall){ wall.classList.remove("fs"); return; }
   wall.classList.add("fs");
   const n = [...tiles.values()].filter(t => t.el.style.display !== "none").length;
   if (!n) return;
   const cs = getComputedStyle(wall);
-  const gap = parseFloat(cs.columnGap) || 8;
+  const gap = parseFloat(cs.columnGap) || 1;
   const W = wall.clientWidth  - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
   const H = wall.clientHeight - parseFloat(cs.paddingTop)  - parseFloat(cs.paddingBottom);
-  const HEADER = 35;            // høyde på flis-header
+  const HEADER = 0; // Headeren svever over bildet og tar ikke plass fra layouten
+  
   let best = {cols:1, score:Infinity};
   for (let cols = 1; cols <= n; cols++){
     const rows = Math.ceil(n / cols);
     const cw = (W - gap*(cols-1)) / cols;
     const ch = (H - gap*(rows-1)) / rows - HEADER;
     if (cw <= 0 || ch <= 0) continue;
-    // Velg oppsettet der bildeformatet ligger nærmest 16:9 (minst beskjæring)
     const score = Math.abs(Math.log((cw/ch) / (16/9)));
     if (score < best.score) best = { cols, score };
   }
@@ -942,7 +1015,7 @@ function layoutFs(){
 document.addEventListener("fullscreenchange", () => requestAnimationFrame(layoutFs));
 window.addEventListener("resize", layoutFs);
 
-/* Fullskjerm kun for veggen (#wall), skjuler menyer */
+/* Fullskjerm kun for veggen (#wall) */
 $("#btnWallFs").onclick = () => {
   if (document.fullscreenElement) {
     document.exitFullscreen();

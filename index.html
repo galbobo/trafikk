@@ -375,50 +375,48 @@ const CONFIG = {
   HIDDEN_STORAGE_KEY: "trafikk-hidden-cams"
 };
 
-/* Komplett kameraliste for Sør-Vest politidistrikt */
+/* Komplett og verifisert kameraliste for Sør-Vest */
 const DEFAULT_CAMERAS = [
-  // Sør for Boknafjorden: Sentrale byområder & motorvei
-  {"id":"cam-01","name":"Fv509 – Kannik (vest)","source":"Aftenbladet","type":"hls","url":"https://svplive-lh.akamaized.net/hls/live/2039442/sa/Y8fGeD62y0DUM6JCpgm6P/master.m3u8","lat":58.966,"lng":5.725,"refresh":60},
-  {"id":"cam-02","name":"Fv509 – Kannik (øst)","source":"Aftenbladet","type":"hls","url":"https://svplive-lh.akamaized.net/hls/live/msl5/20001089/sa_D2azfzV6IxSnseFDLooBu/source.m3u8","lat":58.967,"lng":5.728,"refresh":60},
-  {"id":"cam-03","name":"Fv509 – Tjensvollkrysset","source":"Aftenbladet","type":"hls","url":"https://svplive-lh.akamaized.net/hls/live/2039446/sa/v9xFTOrfTvxvdp9AqwVSv/master.m3u8","lat":58.952,"lng":5.712,"refresh":60},
-  {"id":"cam-04","name":"E39 – Kiellandsmyra 1 – mot Stavanger","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129038_1/hls_1_stream_1_orig.m3u8","lat":58.935,"lng":5.715,"refresh":60},
-  {"id":"cam-05","name":"E39 – Kiellandsmyra 2 – mot Sandnes","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129038_2/hls_1_stream_1_orig.m3u8","lat":58.934,"lng":5.716,"refresh":60},
-  {"id":"cam-06","name":"E39 – Forus 1 – mot Stavanger","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129024_1/hls_1_stream_1_orig.m3u8","lat":58.888,"lng":5.717,"refresh":60},
-  {"id":"cam-07","name":"E39 – Forus 2 – mot Sandnes","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129024_2/hls_1_stream_1_orig.m3u8","lat":58.8882,"lng":5.718,"refresh":60},
+  // --- SENTRALT NÆROMRÅDE (STAVANGER / SANDNES / SOLA) ---
+  {"id":"cam-01","name":"Fv509 – Kannik (vest)","source":"Aftenbladet","type":"hls","url":"https://svplive-lh.akamaized.net/hls/live/2039442/sa/Y8fGeD62y0DUM6JCpgm6P/master.m3u8","lat":58.9660,"lng":5.7250,"refresh":60},
+  {"id":"cam-02","name":"Fv509 – Kannik (øst)","source":"Aftenbladet","type":"hls","url":"https://svplive-lh.akamaized.net/hls/live/msl5/20001089/sa_D2azfzV6IxSnseFDLooBu/source.m3u8","lat":58.9670,"lng":5.7280,"refresh":60},
+  {"id":"cam-03","name":"Fv509 – Tjensvollkrysset","source":"Aftenbladet","type":"hls","url":"https://svplive-lh.akamaized.net/hls/live/2039446/sa/v9xFTOrfTvxvdp9AqwVSv/master.m3u8","lat":58.9520,"lng":5.7120,"refresh":60},
+  {"id":"cam-04","name":"E39 – Kiellandsmyra 1 – mot Stavanger","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129038_1/hls_1_stream_1_orig.m3u8","lat":58.9350,"lng":5.7150,"refresh":60},
+  {"id":"cam-05","name":"E39 – Kiellandsmyra 2 – mot Sandnes","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129038_2/hls_1_stream_1_orig.m3u8","lat":58.9340,"lng":5.7160,"refresh":60},
+  {"id":"cam-06","name":"E39 – Forus 1 – mot Stavanger","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129024_1/hls_1_stream_1_orig.m3u8","lat":58.8880,"lng":5.7170,"refresh":60},
+  {"id":"cam-07","name":"E39 – Forus 2 – mot Sandnes","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129024_2/hls_1_stream_1_orig.m3u8","lat":58.8882,"lng":5.7180,"refresh":60},
   {"id":"cam-08","name":"E39 – Schancheholen 1","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129023_1/hls_1_stream_1_orig.m3u8","lat":58.9482,"lng":5.7208,"refresh":60},
   {"id":"cam-09","name":"E39 – Schancheholen 2","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129023_2/hls_1_stream_1_orig.m3u8","lat":58.9480,"lng":5.7210,"refresh":60},
-  {"id":"cam-10","name":"E39 – Harestad – mot Stavanger","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129027_2/manifest.m3u8","lat":59.000,"lng":5.630,"refresh":60},
-  {"id":"cam-11","name":"Rv509 – Sømmevågen 1 – mot Tananger","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129034_1/hls_1_stream_1_orig.m3u8","lat":58.89572,"lng":5.63963,"refresh":60},
-  {"id":"cam-12","name":"Rv509 – Sømmevågen 2 – mot Sola","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129034_2/hls_1_stream_1_orig.m3u8","lat":58.89572,"lng":5.63963,"refresh":60},
-  {"id":"cam-13","name":"Rv509 – Solasplitten","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129032_1","lat":58.910,"lng":5.670,"refresh":30},
-  {"id":"cam-14","name":"Fv441 – Sundekrossen – mot Stavanger","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129016_2","lat":58.975,"lng":5.630,"refresh":30},
-  {"id":"cam-15","name":"Fv441 – Sundekrossen – mot Tananger","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129016_1","lat":58.974,"lng":5.630,"refresh":30},
-  {"id":"cam-16","name":"Sandnes – Hanafjellet","source":"Aftenbladet","type":"hls","url":"https://svplive-lh.akamaized.net/hls/live/2039445/sa/3VfMr0j5AeEFEshBL8BDH/master.m3u8","lat":58.845,"lng":5.785,"refresh":60},
-  {"id":"cam-17","name":"Sandnes – Vågen","source":"Aftenbladet","type":"hls","url":"https://svplive-lh.akamaized.net/hls/live/msl5/20001089/sa_LIpi0Yh9hizlUH4ddVbYO/master.m3u8","lat":58.8517,"lng":5.733,"refresh":60},
-  {"id":"cam-18","name":"Stavanger – Oljemuseet","source":"Aftenbladet","type":"hls","url":"https://svplive-lh.akamaized.net/hls/live/msl5/20001089/sa_DoIUz1MAI79XozrylNad2/master.m3u8","lat":58.9707,"lng":5.731,"refresh":60},
+  {"id":"cam-10","name":"E39 – Harestad – mot Stavanger","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129027_2/manifest.m3u8","lat":59.0000,"lng":5.6300,"refresh":60},
+  {"id":"cam-11","name":"Rv509 – Sømmevågen 1 – mot Tananger","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129034_1/hls_1_stream_1_orig.m3u8","lat":58.8957,"lng":5.6396,"refresh":60},
+  {"id":"cam-12","name":"Rv509 – Sømmevågen 2 – mot Sola","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129034_2/hls_1_stream_1_orig.m3u8","lat":58.8957,"lng":5.6396,"refresh":60},
+  {"id":"cam-13","name":"Rv509 – Solasplitten","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129032_1","lat":58.9100,"lng":5.6700,"refresh":30},
+  {"id":"cam-14","name":"Fv441 – Sundekrossen – mot Stavanger","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129016_2","lat":58.9750,"lng":5.6300,"refresh":30},
+  {"id":"cam-15","name":"Fv441 – Sundekrossen – mot Tananger","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129016_1","lat":58.9740,"lng":5.6300,"refresh":30},
+  {"id":"cam-16","name":"Sandnes – Hanafjellet","source":"Aftenbladet","type":"hls","url":"https://svplive-lh.akamaized.net/hls/live/2039445/sa/3VfMr0j5AeEFEshBL8BDH/master.m3u8","lat":58.8450,"lng":5.7850,"refresh":60},
+  {"id":"cam-17","name":"Sandnes – Vågen","source":"Aftenbladet","type":"hls","url":"https://svplive-lh.akamaized.net/hls/live/msl5/20001089/sa_LIpi0Yh9hizlUH4ddVbYO/master.m3u8","lat":58.8517,"lng":5.7330,"refresh":60},
+  {"id":"cam-18","name":"Stavanger – Oljemuseet","source":"Aftenbladet","type":"hls","url":"https://svplive-lh.akamaized.net/hls/live/msl5/20001089/sa_DoIUz1MAI79XozrylNad2/master.m3u8","lat":58.9707,"lng":5.7310,"refresh":60},
 
-  // Sør for Boknafjorden: Sandnes sør / Jæren / Dalane
+  // --- SØR FOR SANDNES / JÆREN / DALANE (E39 SØROVER) ---
   {"id":"cam-19","name":"E39 – Bråstein – mot Stavanger","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129011_1/hls_1_stream_1_orig.m3u8","lat":58.8236,"lng":5.7871,"refresh":60},
   {"id":"cam-20","name":"E39 – Bråstein – mot Ålgård","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129011_2/hls_1_stream_1_orig.m3u8","lat":58.8234,"lng":5.7874,"refresh":60},
   {"id":"cam-21","name":"E39 – Skurve / Ålgård","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129009_1","lat":58.7490,"lng":5.8890,"refresh":30},
-  {"id":"cam-22","name":"E39 – Bue (Bjerkreim)","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129008_1","lat":58.6250,"lng":6.0020,"refresh":30},
+  {"id":"cam-22","name":"E39 – Bue (Bjerkreim)","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129007_1","lat":58.6250,"lng":6.0020,"refresh":30},
   {"id":"cam-23","name":"E39 – Helleland (Eigersund)","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129006_1","lat":58.5210,"lng":6.1280,"refresh":30},
-  {"id":"cam-24","name":"E39 – Ualand","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129005_1","lat":58.4550,"lng":6.3470,"refresh":30},
+  {"id":"cam-24","name":"E39 – Ualand (Lund)","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129004_1","lat":58.4550,"lng":6.3470,"refresh":30},
   {"id":"cam-25","name":"Fv44 – Varhaug (Jæren)","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129045_1","lat":58.6180,"lng":5.6540,"refresh":30},
 
-  // Ferjesambandet over Boknafjorden
-  {"id":"cam-26","name":"E39 – Rennesøy","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129018_1","lat":59.090,"lng":5.700,"refresh":30},
+  // --- BOKNAFJORD-SAMBANDET ---
+  {"id":"cam-26","name":"E39 – Rennesøy","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129018_1","lat":59.0900,"lng":5.7000,"refresh":30},
   {"id":"cam-27","name":"E39 – Mortavika ferjekai (sør)","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129036_1/manifest.m3u8","lat":59.1392,"lng":5.5898,"refresh":60},
-  {"id":"cam-28","name":"E39 – Arsvågen ferjekai (nord)","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129037_2/manifest.m3u8","lat":59.250,"lng":5.480,"refresh":60},
+  {"id":"cam-28","name":"E39 – Arsvågen ferjekai (nord)","source":"Vegvesen","type":"hls","url":"https://kamera.vegvesen.no/public/1129037_2/manifest.m3u8","lat":59.2500,"lng":5.4800,"refresh":60},
 
-  // Nord for Boknafjorden: Karmøy & Haugesund
+  // --- NORD FOR BOKNAFJORDEN (HAUGALANDET & INDRE) ---
   {"id":"cam-29","name":"Haugesund – Smedasundet","source":"Jatec","type":"image","url":"https://www.jatec.no/wp-content/uploads/Smedasundet/Smedasundet000M.jpg","lat":59.4105,"lng":5.2685,"refresh":60},
-  {"id":"cam-30","name":"Fv47 – Karmsund bru (vest/Fastland)","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129051_1","lat":59.3800,"lng":5.2950,"refresh":30},
+  {"id":"cam-30","name":"Fv47 – Karmsund bru","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129051_1","lat":59.3800,"lng":5.2950,"refresh":30},
   {"id":"cam-31","name":"Fv47 – Husabøkrossen (Karmøy)","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129053_1","lat":59.2780,"lng":5.2750,"refresh":30},
-  {"id":"cam-32","name":"E134 – Raglamyr / Haugesund øst","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129052_1","lat":59.4080,"lng":5.3210,"refresh":30},
+  {"id":"cam-32","name":"E134 – Raglamyr (Haugesund øst)","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129052_1","lat":59.4080,"lng":5.3210,"refresh":30},
   {"id":"cam-33","name":"E39/E134 – Aksdal krysset","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129048_1","lat":59.3700,"lng":5.4450,"refresh":30},
-
-  // Nord for Boknafjorden: Indre strøk & fjelloverganger
   {"id":"cam-34","name":"E134 – Knapphus (Vindafjord)","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1129049_1","lat":59.4880,"lng":5.7820,"refresh":30},
   {"id":"cam-35","name":"E134 – Seljestadjuvet (mot Røldal)","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1229001_1","lat":59.8970,"lng":6.6340,"refresh":30},
   {"id":"cam-36","name":"Rv13 – Håra (Røldal krysset)","source":"Vegvesen","type":"image","url":"https://kamera.atlas.vegvesen.no/api/images/1229002_1","lat":59.8250,"lng":6.7680,"refresh":30},
@@ -876,9 +874,13 @@ $("#btnCloseMap").onclick = () => toggleMap(false);
 
 function popupEl(cam){
   const d = document.createElement("div");
-  d.innerHTML = `<b>${cam.name}</b><br><small>${cam.source}</small><br>
-    <button style="margin-top:6px;background:var(--acc);color:#000;border:0;padding:4px 8px;border-radius:4px;font-weight:600;cursor:pointer">Åpne</button>`;
-  d.querySelector("button").onclick = () => openViewer(cam.id);
+  d.innerHTML = `<b>${cam.name}</b><br><small>${cam.source} (${cam.type.toUpperCase()})</small><br>
+    <button data-camid="${cam.id}" style="margin-top:6px;background:var(--acc);color:#000;border:0;padding:4px 10px;border-radius:4px;font-weight:600;cursor:pointer">Åpne kamera</button>`;
+  
+  d.querySelector("button").onclick = (e) => {
+    const id = e.target.getAttribute("data-camid");
+    openViewer(id);
+  };
   return d;
 }
 
@@ -901,8 +903,10 @@ function leafletMapApi(){
     setStatus(id,s){ markers.get(id)?.setIcon(mk(s)); },
     setVisible(set){ markers.forEach((m,id)=> set.has(id) ? m.addTo(map) : m.remove()); },
     focus(id){
-      const m=markers.get(id); if(!m) return;
-      map.setView(m.getLatLng(), 13); m.openPopup();
+      const m = markers.get(id); 
+      if(!m) return;
+      map.setView(m.getLatLng(), 13); 
+      m.openPopup();
     },
     fit(){
       const pts=[...markers.values()].map(m=>m.getLatLng());
